@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:bingo_n/GameState/state.dart';
-import 'package:bingo_n/Service/stateService.dart';
-import 'package:bingo_n/network/network.dart';
+import 'package:bingo_n/DTOs/stateService.dart';
+import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:flutter/material.dart';
 import 'package:bingo_n/main.dart';
@@ -26,7 +26,7 @@ class ClientPage extends StatefulWidget {
 extension SocketLines on Socket{
   Stream<String> get lines=>cast<List<int>>().transform(const Utf8Decoder()).transform(const LineSplitter());
 }
-final net=Network.instance;
+final net=NetworkData.instance;
 final service=Stateservice.instance;
 class _ClientState extends State<ClientPage> {
   int joinPressed=0;

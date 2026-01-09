@@ -5,7 +5,7 @@ import 'package:bingo_n/boundedSet.dart';
 class Stateservice {
   static Stateservice instance=Stateservice._init();
   Stateservice._init();
-  String serializeState({String? Name,List<int>? clientPattern,required turn,required int recentSelected,bool? shouldStartGame}){
+  String serializeState({String? Name,List<int>? clientPattern,required turn,required int recentSelected,bool? shouldStartGame,bool? isWonGame}){
     String msg="";
     if(Name!=null && clientPattern!=null){
       Map<String,dynamic> firstData={
@@ -16,7 +16,8 @@ class Stateservice {
     }else{
       Map<String,dynamic> laterData={
         'isMyTurn':turn,
-        'recentSelected':recentSelected
+        'recentSelected':recentSelected,
+        'isWonGame':isWonGame
       };
       msg=jsonEncode(laterData);
     }

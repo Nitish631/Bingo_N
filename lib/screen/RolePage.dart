@@ -1,3 +1,4 @@
+import 'package:bingo_n/GameState/state.dart';
 import 'package:bingo_n/Roles/client.dart';
 import 'package:bingo_n/Roles/host.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,7 @@ class Rolepage extends StatelessWidget {
                 children: [
                   ElevatedButton(
                     onPressed: () {
+                      isHost=true;
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (builder) => HostPage()),
@@ -60,6 +62,7 @@ class Rolepage extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: () {
+                        isHost=false;
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (builder) => ClientPage()),

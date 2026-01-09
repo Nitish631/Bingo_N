@@ -1,4 +1,4 @@
-import 'package:bingo_n/Service/stateService.dart';
+import 'package:bingo_n/DTOs/stateService.dart';
 import 'package:bingo_n/database/userInfo.dart';
 late final dbInst;
  late List<int> pattern;
@@ -8,6 +8,7 @@ late final dbInst;
   int gotRecentSelected=55;
   int sendRecentSelected=55;
   bool? isHost;
+  bool won=false;
 class GameState{
   Map<String,dynamic> gameData={};
   final service=Stateservice.instance;

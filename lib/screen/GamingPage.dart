@@ -11,7 +11,6 @@ class Gamingpage extends StatefulWidget {
   @override
   State<Gamingpage> createState() => _GamingpageState();
 }
-
 List<String> bingo = ['B', 'I', 'N', 'G', 'O'];
 int bingoIndex = 0;
 final List<List<int>> winningList = [

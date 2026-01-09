@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:bingo_n/Service/stateService.dart';
+import 'package:bingo_n/DTOs/stateService.dart';
 import 'package:bingo_n/boundedSet.dart';
-import 'package:bingo_n/network/network.dart';
+import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:flutter/material.dart';
 import 'package:bingo_n/main.dart';
 import 'package:bingo_n/GameState/state.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-final net = Network.instance;
+final net = NetworkData.instance;
 final service = Stateservice.instance;
 Duration beconInterval = Duration(seconds: 1);
 bool isAllPlayerReady() {
@@ -92,14 +92,16 @@ class _HostState extends State<HostPage> {
 
   void _handleNewClient(Socket client) {
     clients.add(client);
-    _broadcastGameState(true, 55);
+    _broadcastGameState(true, 55, false);
     final sub = client.lines.listen(
       (line) {
         setState(() {
           final dataMap = service.deserializeState(line);
           gotRecentSelected = dataMap['recentSelected'];
-          if (dataMap.containsKey("Name"))gmst.clientNames.add(dataMap['Name']);
-          if (dataMap.containsKey('clientAlloweded'))gmst.clientsAlloweded?.add(true);
+          if (dataMap.containsKey("Name"))
+            gmst.clientNames.add(dataMap['Name']);
+          if (dataMap.containsKey('clientAlloweded'))
+            gmst.clientsAlloweded?.add(true);
         });
       },
       onError: (error) {
@@ -118,7 +120,7 @@ class _HostState extends State<HostPage> {
     });
   }
 
-  void _broadcastGameState(bool isFirst, int recentSelected) {
+  void _broadcastGameState(bool isFirst, int recentSelected, bool isWonGame) {
     int counter = 1;
     String msg;
     for (final c in clients.set.toList()) {
@@ -150,10 +152,10 @@ class _HostState extends State<HostPage> {
   void dispose() {
     becon?.cancel();
     udp?.close();
-    for (final c in clients.set.toList()) {
-      c.destroy();
-    }
-    server?.close();
+    // for (final c in clients.set.toList()) {
+    //   c.destroy();
+    // }
+    // server?.close();
     super.dispose();
   }
 
@@ -183,48 +185,48 @@ class _HostState extends State<HostPage> {
                   Padding(
                     padding: EdgeInsetsGeometry.symmetric(vertical: 16),
                     child: Column(
-                      children: List.generate(
-                        gmst.clientNames.length,
-                        (index) {
-                          return Container(
-                            height: 50,
-                            width: 150,
-                            child: Text(
-                              "${gmst.clientNames[index]}",
-                              style: GoogleFonts.roboto(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 30,
-                                color: Color.fromRGBO(54, 27, 10, 1)
-                              ),
+                      children: List.generate(gmst.clientNames.length, (index) {
+                        return Container(
+                          height: 50,
+                          width: 150,
+                          child: Text(
+                            "${gmst.clientNames[index]}",
+                            style: GoogleFonts.roboto(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 30,
+                              color: Color.fromRGBO(54, 27, 10, 1),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }),
                     ),
                   ),
-                  const SizedBox(height: 16,),
+                  const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: (){
-                      if(isAllPlayerReady()){
-                        final msg=jsonEncode({"HostStartedGame":true});
-                        for(Socket c in clients.set){
+                    onPressed: () {
+                      if (isAllPlayerReady()) {
+                        final msg = jsonEncode({"HostStartedGame": true});
+                        for (Socket c in clients.set) {
                           c.write(msg);
                         }
-                        Navigator.push(context, MaterialPageRoute(builder:(context)=>Gamingpage()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Gamingpage()),
+                        );
                       }
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromRGBO(255, 98, 0, 1),
+                    ),
                     child: Text(
                       "START GAME",
                       style: GoogleFonts.roboto(
                         fontWeight: FontWeight.bold,
                         fontSize: 30,
-                        color: Color.fromRGBO(255, 255, 0, 1)
+                        color: Color.fromRGBO(255, 255, 0, 1),
                       ),
                     ),
-                    style:ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromRGBO(255, 98, 0, 1)
-                    )
-                  )
+                  ),
                 ],
               ),
             ),

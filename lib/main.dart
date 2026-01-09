@@ -1,5 +1,5 @@
 import 'package:bingo_n/GameState/state.dart';
-import 'package:bingo_n/screen/GamingPage.dart';
+// import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/screen/animation.dart';
 // import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +20,7 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Gamingpage(),
+      home: EntryPage(),
     );
   }
 }

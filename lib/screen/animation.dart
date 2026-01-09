@@ -1,3 +1,4 @@
+import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/screen/preGame.dart';
 import 'package:flutter/material.dart';
 class EntryPage extends StatefulWidget {
@@ -32,7 +33,7 @@ class _NamePageState extends State<EntryPage> {
           tween: Tween<double>(begin: 40,end: 400),
           duration:const Duration(seconds: 5),
           onEnd: () {
-            Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>PreGamePage()));
+            Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>Gamingpage()));
           } ,
           builder:(context,value,child){
             return Stack(

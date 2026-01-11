@@ -4,12 +4,14 @@ class ClientSendDto {
   int? id;
   String name;
   bool isReady;
+  bool gotPattern;
   ClientSendDto({
     required this.name,
     this.id,
     required this.isWon,
     this.recentlyClicked,
-    required this.isReady
+    required this.isReady,
+    required this.gotPattern
   });
   Map<String, dynamic> toJson() {
     return {
@@ -17,7 +19,8 @@ class ClientSendDto {
       'isWon': isWon,
       'id': id,
       'name': name,
-      'isReady':isReady
+      'isReady':isReady,
+      'gotPattern':gotPattern
     };
   }
 
@@ -27,7 +30,8 @@ class ClientSendDto {
       isWon: json['isWon'],
       id: json['id'],
       recentlyClicked: json['recentlyClicked'],
-      isReady: json['isReady']
+      isReady: json['isReady'],
+      gotPattern: json['gotPattern']
     );
   }
 }

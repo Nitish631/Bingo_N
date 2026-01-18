@@ -31,7 +31,7 @@ class _NamePageState extends State<EntryPage> {
         child:Center(
           child:TweenAnimationBuilder(
             tween: Tween<double>(begin: 40,end: 400),
-            duration:const Duration(seconds: 5),
+            duration:const Duration(seconds: 4),
             onEnd: () {
               // Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>Gamingpage()));
             } ,
@@ -40,7 +40,7 @@ class _NamePageState extends State<EntryPage> {
                 children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       
                       children: [
                         Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
@@ -52,7 +52,7 @@ class _NamePageState extends State<EntryPage> {
                     ),
                   Row(
                        mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
                         Text("I",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-10)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),

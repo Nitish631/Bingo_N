@@ -121,7 +121,7 @@ class Server {
       reuseAddress: true,
     );
     udpSocket.broadcastEnabled = true;
-    final msg = '${udpTag}|$ip|$tcpPort';
+    String msg = '${udpTag}|$ip|$tcpPort';
     becon = Timer.periodic(const Duration(seconds: 1), (_) {
       udpSocket.send(
         utf8.encode(msg),
@@ -222,7 +222,7 @@ class Server {
     for (ClientData client in clients) {
       if(client.id==0)continue;
       try {
-        client.clientSocket.write('$msg\n');
+        client.clientSocket.write('$msg\n');// client.clientSocket.add(utf8.encode('$msg\n'));
       } catch (error) {
         _handleTheRemovalOfTheClient(client.clientSocket, client.id);
       }

@@ -63,7 +63,7 @@ class Client {
     Map<String, dynamic> msgJson = csd.toJson();
     String msg = jsonEncode(msgJson);
     try {
-      tcpSocket.write('$msg\n');
+      tcpSocket.write('$msg\n');// tcpSocket.add(utf8.encode('$msg\n'));
     } catch (e) {
       _handleTheDisconnectionWithServer();
       //NOTIFY THE USER THAT THE CONNECTION IS LOSS.

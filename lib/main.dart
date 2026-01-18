@@ -1,12 +1,11 @@
 import 'package:bingo_n/GameState/state.dart';
-// import 'package:bingo_n/screen/GamingPage.dart';
+import 'package:bingo_n/database/userInfo.dart';
 import 'package:bingo_n/screen/animation.dart';
-// import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
 late final GameState gmst;
 void main(List<String> args) async{
-  // WidgetsFlutterBinding.ensureInitialized();
-  // gmst=await GameState.getInstance();
+  UserDatabase userDatabase=UserDatabase.instance;
+  userDatabase.database;
   runApp(const Game());
 }
 class Game extends StatefulWidget {
@@ -20,7 +19,7 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: EntryPage(),
+      home:EntryPage()
     );
   }
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:bingo_n/GameState/state.dart';
-import 'package:bingo_n/DTOs/stateService.dart';
+import 'package:bingo_n/Service/stateService.dart';
 import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:flutter/material.dart';

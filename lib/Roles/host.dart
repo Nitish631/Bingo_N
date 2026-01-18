@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:bingo_n/DTOs/stateService.dart';
+import 'package:bingo_n/Service/stateService.dart';
 import 'package:bingo_n/boundedSet.dart';
 import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/screen/GamingPage.dart';

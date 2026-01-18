@@ -1,4 +1,4 @@
-import 'package:bingo_n/DTOs/stateService.dart';
+import 'package:bingo_n/Service/stateService.dart';
 import 'package:bingo_n/database/userInfo.dart';
 late final dbInst;
  late List<int> pattern;

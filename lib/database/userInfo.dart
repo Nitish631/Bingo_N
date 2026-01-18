@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:nativewrappers/_internal/vm/lib/ffi_native_type_patch.dart';
-
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
 class UserDatabase{
@@ -40,11 +38,11 @@ class UserDatabase{
     final result= await db.update('user',{'pattern':jsonEncode(pattern)},where:'id=?',whereArgs:[1]);
     return result>0;
   }
-  Future<Map<String,dynamic>> getUser() async{
+  Future<String> getUserName() async{
     final db =await database;
     final result=await db.query('user',where: 'id=?',whereArgs: [1]);
     final user=result.first;
-    return {'name':user['name'],'pattern':List<int>.from(jsonDecode(user['pattern'] as String))};
+    return user['name'] as String;
   }
   Future<List<int>> getStoredPattern()async{
     final db=await database;

@@ -1,5 +1,4 @@
 import 'package:bingo_n/screen/GamingPage.dart';
-import 'package:bingo_n/screen/preGame.dart';
 import 'package:flutter/material.dart';
 class EntryPage extends StatefulWidget {
   const EntryPage({super.key});
@@ -24,48 +23,50 @@ double opacityForFirst(double value){
 class _NamePageState extends State<EntryPage> {
   @override
   Widget build(BuildContext context) {
-    return  Container(
-      height: double.infinity,
-      color: Colors.black,
-      width: double.infinity,
-      child:Center(
-        child:TweenAnimationBuilder(
-          tween: Tween<double>(begin: 40,end: 400),
-          duration:const Duration(seconds: 5),
-          onEnd: () {
-            Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>Gamingpage()));
-          } ,
-          builder:(context,value,child){
-            return Stack(
-              children: [
+    return  Scaffold(
+      body: Container(
+        height: double.infinity,
+        color: Colors.black,
+        width: double.infinity,
+        child:Center(
+          child:TweenAnimationBuilder(
+            tween: Tween<double>(begin: 40,end: 400),
+            duration:const Duration(seconds: 5),
+            onEnd: () {
+              // Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>Gamingpage()));
+            } ,
+            builder:(context,value,child){
+              return Stack(
+                children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      
+                      children: [
+                        Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
+                        Text("I",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("N",style: TextStyle(color: Color.fromRGBO(255, 0, 0, opacityForFirst(value)),fontSize: 65,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("G",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("O",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                      ],
+                    ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    
-                    children: [
-                      Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
-                      Text("I",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("N",style: TextStyle(color: Color.fromRGBO(255, 0, 0, opacityForFirst(value)),fontSize: 65,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("G",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("O",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForFirst(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                    ],
-                  ),
-                Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
-                      Text("I",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-10)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("N",style: TextStyle(color: Color.fromRGBO(255, 0, 0, opacityForSecond(value-20)),fontSize: 65,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("G",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-30)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                      Text("O",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-40)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
-                    ],
-                  )
-
-              ],
-              
-            );
-          }
+                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text("B",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none),),
+                        Text("I",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-10)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("N",style: TextStyle(color: Color.fromRGBO(255, 0, 0, opacityForSecond(value-20)),fontSize: 65,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("G",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-30)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                        Text("O",style: TextStyle(color: Color.fromRGBO(255, 140, 0, opacityForSecond(value-40)),fontSize: 50,fontWeight: FontWeight.bold,decoration: TextDecoration.none)),
+                      ],
+                    )
+      
+                ],
+                
+              );
+            }
+          ),
         ),
       ),
     );

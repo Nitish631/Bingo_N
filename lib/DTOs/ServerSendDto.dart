@@ -24,6 +24,15 @@ class ServerSendDto {
       ..clear()
       ..addAll(map);
   }
+  void clear(){
+    playersWithId.clear();
+    gameStarted=false;
+    readyPlayers=[];
+    gamePattern=null;
+    wonList=null;
+    turnId=-1;
+    clientIdWithPattern=null;
+  }
 
   Map<String, dynamic> toJson() {
     return {

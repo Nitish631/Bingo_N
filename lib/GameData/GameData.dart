@@ -22,6 +22,16 @@ class GameData {
   void setId(int? id){
     _myId ??= id;
   }
+  void clear(){
+    playersWithId.clear();
+    gameStarted=false;
+    readyPlayers=[];
+    gameClickedPattern=[];
+    wonList=[];
+    turnId=-1;
+    myPattern=[];
+    _myId=null;
+  }
 
   List<int> updateGameClickedPattern(int clicked) {
     gameClickedPattern.add(clicked);

@@ -1,6 +1,5 @@
-import 'package:bingo_n/GameState/state.dart';
-import 'package:bingo_n/Roles/client.dart';
-import 'package:bingo_n/Roles/host.dart';
+import 'package:bingo_n/screen/ClientGamePage.dart';
+import 'package:bingo_n/screen/HostGamePage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -38,47 +37,50 @@ class Rolepage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      isHost=true;
+                  InkWell(
+                    onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (builder) => HostPage()),
+                        MaterialPageRoute(builder: (builder) => HostGamePage()),
                       );
                     },
-                    child: const Text(
-                      "HOST",
-                      style: TextStyle(
-                        color: Color.fromRGBO(255, 187, 0, 1),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      shape: RoundedRectangleBorder(
+                    
+                    child: Container(
+                      width: 100,
+                      height: 50,
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
+                        color: Color.fromRGBO(21, 0, 255, 1)
+                      ),
+                      child: Text(
+                        "HOST",
+                        style: TextStyle(
+                          color: Color.fromRGBO(255, 187, 0, 1),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                        isHost=false;
+                  InkWell(
+                    onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (builder) => ClientPage()),
+                        MaterialPageRoute(builder: (builder) => ClientGamePage()),
                       );
                     },
-                    child: const Text(
-                      "USER",
-                      style: TextStyle(
-                        color: Color.fromRGBO(255, 187, 0, 1),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      shape: RoundedRectangleBorder(
+                    child: Container(
+                      width: 100,
+                      height: 50,
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
+                        color: Color.fromRGBO(21, 0, 255, 1)
+                      ),
+                      child: Text(
+                        "USER",
+                        style: TextStyle(
+                          color: Color.fromRGBO(255, 187, 0, 1),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

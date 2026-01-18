@@ -7,13 +7,14 @@ import 'package:bingo_n/DTOs/ClientData.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/DTOs/PatternWithId.dart';
 import 'package:bingo_n/DTOs/ServerSendDto.dart';
-import 'package:bingo_n/Roles/host.dart';
+import 'package:bingo_n/Extensions/TcpExtension.dart';
 
 class Server {
   late Timer becon;
   // late Timer gameDataSendingTimer;
   late RawDatagramSocket udpSocket;
   final net = NetworkData.instance;
+  late StreamSubscription sub;
   late String ip;
   late int tcpPort;
   late int udpPort;
@@ -142,7 +143,7 @@ class Server {
     ClientSendDto clientSendDto;
     Map<String, dynamic> json;
     List<int> clientGamePattern = generatePattern(id);
-    final sub = clientSocket.lines.listen(
+    sub = clientSocket.lines.listen(
       (line) {
         json = jsonDecode(line);
         clientSendDto = ClientSendDto.fromJson(json);
@@ -238,6 +239,7 @@ class Server {
     for (ClientData client in clients) {
       client.clientSocket.destroy();
     }
+    sub.cancel();
     serverSocket.close();
     clients.clear();
   }

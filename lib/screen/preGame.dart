@@ -1,7 +1,7 @@
+import 'package:bingo_n/database/userInfo.dart';
 import 'package:bingo_n/screen/RolePage.dart';
 import 'package:bingo_n/screen/nameInput.dart';
 import 'package:flutter/material.dart';
-import 'package:bingo_n/main.dart';
 class PreGamePage extends StatefulWidget {
   const PreGamePage({super.key});
 
@@ -17,10 +17,9 @@ class _PreGamePageState extends State<PreGamePage> {
     _loadUser();
   }
    Future<void>_loadUser()async{
-    final userData=gmst.userData;
-    setState(() {
-     name=userData?['name']??"";      
-    });
+    final userData=UserDatabase.instance;
+     name=await userData.getUserName();      
+    setState((){});
    }
   @override
   Widget build(BuildContext context) {

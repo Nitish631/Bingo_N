@@ -1,4 +1,3 @@
-import 'package:bingo_n/GameState/state.dart';
 import 'package:bingo_n/screen/RolePage.dart';
 import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ class _NameInputPageState extends State<NameInputPage> {
   late TextEditingController nameFieldController;
   late FocusNode nameFocus;
   late UserDatabase dbInst;
+  late String myName;
 
   @override
   void initState() {
@@ -35,8 +35,6 @@ class _NameInputPageState extends State<NameInputPage> {
     final enteredName = nameFieldController.text.trim();
     if (enteredName.isEmpty) return;
     await dbInst.updateName(enteredName);
-    final gmst = await GameState.getInstance();
-    gmst.userData?['name'] = enteredName;
     myName=enteredName;
     if (!mounted) return;
     Navigator.pushReplacement(

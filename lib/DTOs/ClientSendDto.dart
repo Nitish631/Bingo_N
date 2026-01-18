@@ -14,6 +14,14 @@ class ClientSendDto {
     required this.isReady,
     required this.gotPattern,
   });
+  void clear(){
+    recentlyClicked=null;
+    isWon=false;
+    id=null;
+    name="";
+    isReady=false;
+    gotPattern=false;
+  }
 
   Map<String, dynamic> toJson() {
     return {

@@ -1,8 +1,6 @@
-import 'package:bingo_n/GameState/state.dart';
 import 'package:bingo_n/database/userInfo.dart';
 import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
-late final GameState gmst;
 void main(List<String> args) async{
   UserDatabase userDatabase=UserDatabase.instance;
   userDatabase.database;

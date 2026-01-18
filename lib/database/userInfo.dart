@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:nativewrappers/_internal/vm/lib/ffi_native_type_patch.dart';
 
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
@@ -44,5 +45,20 @@ class UserDatabase{
     final result=await db.query('user',where: 'id=?',whereArgs: [1]);
     final user=result.first;
     return {'name':user['name'],'pattern':List<int>.from(jsonDecode(user['pattern'] as String))};
+  }
+  Future<List<int>> getStoredPattern()async{
+    final db=await database;
+    final result=await db.query(
+      'user',
+      columns: ['pattern'],
+      where: 'id=?',
+      whereArgs: [1],
+      limit: 1
+    );
+    if(result.isEmpty){
+      throw Exception('User not found');
+    }
+    final patternJson=result.first['pattern'] as String;
+    return List<int>.from(jsonDecode(patternJson));
   }
 }

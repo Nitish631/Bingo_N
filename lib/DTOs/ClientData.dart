@@ -1,6 +1,6 @@
 import 'dart:io';
 
-class Client {
+class ClientData {
   late Socket clientSocket;
   late String name;
   late bool isReadyToPlay;
@@ -9,7 +9,7 @@ class Client {
   late List<int> pattern;
   late bool gotPattern;
 
-  Client({
+  ClientData({
     required this.clientSocket,
     required this.name,
     required this.hasWon,
@@ -18,7 +18,7 @@ class Client {
     required this.gotPattern,
     required this.pattern
   });
-  Client.minimal({required this.id});
+  ClientData.minimal({required this.id});
   void setClientSocket(Socket socket){
     clientSocket=socket;
   }
@@ -26,7 +26,7 @@ class Client {
   @override
   bool operator ==(Object other){
     if(identical(this, other)) return true;
-    if(other is!Client) return false;
+    if(other is!ClientData) return false;
     return id==other.id;
   }
   @override

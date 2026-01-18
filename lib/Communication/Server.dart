@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bingo_n/Communication/NetworkData.dart';
-import 'package:bingo_n/DTOs/Client.dart';
+import 'package:bingo_n/DTOs/ClientData.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/DTOs/PatternWithId.dart';
 import 'package:bingo_n/DTOs/ServerSendDto.dart';
@@ -19,14 +19,14 @@ class Server {
   late int udpPort;
   late String udpTag;
   late ServerSocket serverSocket;
-  late Set<Client> clients=<Client>{};
+  late Set<ClientData> clients=<ClientData>{};
   List<int> gameClickedPattern = [];
   bool gameStarted = false; //CHANGE LATER FROM UI
   late List<int> turnPattern;
   int turnId = -1;
   Map<int, String> getClientsWithId() {
     Map<int, String> nameWithId = {};
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       nameWithId[client.id] = client.name;
     }
     return nameWithId;
@@ -34,7 +34,7 @@ class Server {
 
   List<int> getReadyPlayers() {
     List<int> list = [];
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       if (client.isReadyToPlay) {
         list.add(client.id);
       }
@@ -49,7 +49,7 @@ class Server {
 
   List<int> getWonList() {
     List<int> list = [];
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       if (client.hasWon) {
         list.add(client.id);
       }
@@ -69,7 +69,7 @@ class Server {
 
   List<int> makeTurnPattern() {
     List<int> list = [];
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       list.add(client.id);
     }
     turnPattern = list;
@@ -101,7 +101,7 @@ class Server {
     tcpPort = net.tcpPort;
     udpPort = net.udpPort;
     udpTag = net.udpTag;
-    Client client=Client.minimal(id: 0);
+    ClientData client=ClientData.minimal(id: 0);
     clients.add(client);
     await startTCP(tcpPort);
     await UDPBroadCaster(ip, tcpPort, udpTag, udpPort);
@@ -137,7 +137,7 @@ class Server {
 
   Future<void> _handleNewClient(Socket clientSocket) async {
     int id = clientSocket.hashCode;
-    Client client = Client.minimal(id: id);
+    ClientData client = ClientData.minimal(id: id);
     clients.add(client);
     ClientSendDto clientSendDto;
     Map<String, dynamic> json;
@@ -155,6 +155,7 @@ class Server {
         sendPatternToAllTheClientWhoHaventGot();
         updateGameClickedPattern(clientSendDto.recentlyClicked!);
         getNextTurn();
+        //HANDLE THE SERVER PLAYER
         _sendGameDataToAllTheClients();
       },
       onError: (error) {
@@ -185,7 +186,7 @@ class Server {
         gameStarted: gameStarted,
       );
       List<int> pattern;
-      for (Client client in clients) {
+      for (ClientData client in clients) {
         if(client.id==0)continue;
         if (!client.gotPattern) {
           pattern = generatePattern(client.id);
@@ -217,7 +218,7 @@ class Server {
 
   void sendMessage(Map<String, dynamic> messageJson) {
     String msg = jsonEncode(messageJson);
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       if(client.id==0)continue;
       try {
         client.clientSocket.write('$msg\n');
@@ -234,7 +235,7 @@ class Server {
 
   stopCommunication() {
     stopScanningDevices();
-    for (Client client in clients) {
+    for (ClientData client in clients) {
       client.clientSocket.destroy();
     }
     serverSocket.close();

@@ -4,7 +4,7 @@ class ServerSendDto {
   Map<int, String> playersWithId;
   bool gameStarted;
   List<int> readyPlayers;
-  List<int>? gamePattern;
+  List<int>? gameClickedPattern;
   List<int>? wonList;
   int? turnId;
   PatternWithId? clientIdWithPattern; // client-specific pattern
@@ -13,7 +13,7 @@ class ServerSendDto {
     required this.playersWithId,
     required this.readyPlayers,
     required this.gameStarted,
-    this.gamePattern,
+    this.gameClickedPattern,
     this.clientIdWithPattern,
     this.wonList,
     this.turnId,
@@ -28,7 +28,7 @@ class ServerSendDto {
     playersWithId.clear();
     gameStarted=false;
     readyPlayers=[];
-    gamePattern=null;
+    gameClickedPattern=null;
     wonList=null;
     turnId=-1;
     clientIdWithPattern=null;
@@ -37,7 +37,7 @@ class ServerSendDto {
   Map<String, dynamic> toJson() {
     return {
       'playersWithId': playersWithId.map((k, v) => MapEntry(k.toString(), v)),
-      'gamePattern': gamePattern,
+      'gameClickedPattern': gameClickedPattern,
       'playerPattern': clientIdWithPattern?.toJson(), 
       'wonList': wonList,
       'turnId': turnId,
@@ -52,8 +52,8 @@ class ServerSendDto {
           .map((k, v) => MapEntry(int.parse(k), v as String)),
       readyPlayers: List<int>.from(json['readyPlayers'] ?? []),
       gameStarted: json['gameStarted'] as bool? ?? false,
-      gamePattern: json['gamePattern'] != null
-          ? List<int>.from(json['gamePattern'])
+      gameClickedPattern: json['gameClickedPattern'] != null
+          ? List<int>.from(json['gameClickedPattern'])
           : null,
       clientIdWithPattern: json['playerPattern'] != null
           ? PatternWithId.fromJson(json['playerPattern'])

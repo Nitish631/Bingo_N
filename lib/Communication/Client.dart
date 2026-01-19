@@ -139,7 +139,7 @@ class Client {
             gameData.setPlayersWithId(serverSendDto.playersWithId);
             gameData.gameStarted = serverSendDto.gameStarted;
             gameData.readyPlayers = serverSendDto.readyPlayers;
-            gameData.gameClickedPattern = serverSendDto.gamePattern!;
+            gameData.gameClickedPattern = serverSendDto.gameClickedPattern!;
             gameData.wonList = serverSendDto.wonList!;
             gameData.turnId = serverSendDto.turnId!;
             gameData.myPattern = serverSendDto.clientIdWithPattern!.pattern;

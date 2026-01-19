@@ -4,10 +4,11 @@ class ClientData {
   late Socket clientSocket;
   late String name;
   late bool isReadyToPlay;
-  late bool hasWon;
+  bool hasWon =false;
   final int id;
   late List<int> pattern;
   late bool gotPattern;
+  late int noOfPatternMatched;
 
   ClientData({
     required this.clientSocket,
@@ -16,7 +17,8 @@ class ClientData {
     required this.isReadyToPlay,
     required this.id,
     required this.gotPattern,
-    required this.pattern
+    required this.pattern,
+    required this.noOfPatternMatched
   });
   ClientData.minimal({required this.id});
   void setClientSocket(Socket socket){

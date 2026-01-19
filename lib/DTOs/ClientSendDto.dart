@@ -5,6 +5,7 @@ class ClientSendDto {
   String name;
   bool isReady;
   bool gotPattern;
+  int noOfPatternMatched=0;
 
   ClientSendDto({
     required this.name,
@@ -13,6 +14,7 @@ class ClientSendDto {
     this.recentlyClicked,
     required this.isReady,
     required this.gotPattern,
+    required this.noOfPatternMatched,
   });
   void clear(){
     recentlyClicked=null;
@@ -31,6 +33,7 @@ class ClientSendDto {
       'name': name,
       'isReady': isReady,
       'gotPattern': gotPattern,
+      'noOfPatternMatched':noOfPatternMatched
     };
   }
 
@@ -42,6 +45,7 @@ class ClientSendDto {
       recentlyClicked: json['recentlyClicked'] as int?,
       isReady: json['isReady'] as bool,
       gotPattern: json['gotPattern'] as bool,
+      noOfPatternMatched: json['noOfPatternMatched'] as int
     );
   }
 }

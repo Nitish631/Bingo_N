@@ -8,6 +8,9 @@ import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/DTOs/PatternWithId.dart';
 import 'package:bingo_n/DTOs/ServerSendDto.dart';
 import 'package:bingo_n/Extensions/TcpExtension.dart';
+import 'package:bingo_n/GameData/ConnectionStatus.dart';
+import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/database/userInfo.dart';
 
 class Server {
   late Timer becon;
@@ -21,10 +24,12 @@ class Server {
   late String udpTag;
   late ServerSocket serverSocket;
   late Set<ClientData> clients=<ClientData>{};
-  List<int> gameClickedPattern = [];
-  bool gameStarted = false; //CHANGE LATER FROM UI
+  ClientData serverClient=ClientData.minimal(id: 0);
+  // List<int> gameData.gameClickedPattern = [];
+  GameData gameData=GameData.instance;
+  // bool gameStarted = false; //CHANGE LATER FROM UI
   late List<int> turnPattern;
-  int turnId = -1;
+  // int gameData.turnId = -1;
   Map<int, String> getClientsWithId() {
     Map<int, String> nameWithId = {};
     for (ClientData client in clients) {
@@ -44,8 +49,8 @@ class Server {
   }
 
   List<int> updateGameClickedPattern(int clicked) {
-    gameClickedPattern.add(clicked);
-    return gameClickedPattern;
+    gameData.gameClickedPattern.add(clicked);
+    return gameData.gameClickedPattern;
   }
 
   List<int> getWonList() {
@@ -59,13 +64,13 @@ class Server {
   }
 
   int getNextTurn() {
-    int index = turnPattern.indexOf(turnId);
+    int index = turnPattern.indexOf(gameData.turnId);
     if (index == (turnPattern.length - 1)) {
-      turnId = turnPattern.elementAt(0);
-      return turnId;
+      gameData.turnId = turnPattern.elementAt(0);
+      return gameData.turnId;
     }
-    turnId = turnPattern.elementAt(++index);
-    return turnId;
+    gameData.turnId = turnPattern.elementAt(++index);
+    return gameData.turnId;
   }
 
   List<int> makeTurnPattern() {
@@ -77,20 +82,20 @@ class Server {
     return list;
   }
 
-  int getTurnIdOnClientCommunicationError(int id) {
+  int getTurnIdONTurnRemove(int id) {
     int index = turnPattern.indexOf(id);
     int length = turnPattern.length;
     turnPattern.remove(id);
     if (index == (length - 1)) {
       if(turnPattern.length==0){
-        turnId=-1;
-        return turnId;
+        gameData.turnId=-1;
+        return gameData.turnId;
       }
-      turnId = turnPattern.elementAt(0);
+      gameData.turnId = turnPattern.elementAt(0);
     } else {
-      turnId = turnPattern.elementAt(index);
+      gameData.turnId = turnPattern.elementAt(index);
     }
-    return turnId;
+    return gameData.turnId;
   }
 
   List<int> generatePattern(int id) {
@@ -98,12 +103,18 @@ class Server {
   }
 
   Future<void> start() async {
+    UserDatabase userDatabase=UserDatabase.instance;
     ip = await net.getLocalIPv4();
     tcpPort = net.tcpPort;
     udpPort = net.udpPort;
     udpTag = net.udpTag;
-    ClientData client=ClientData.minimal(id: 0);
-    clients.add(client);
+    String? name= await userDatabase.getUserName();
+    serverClient.name=name??"HOST";
+    clients.add(serverClient);
+    gameData.setName(name);
+    gameData.setId(serverClient.id);
+    gameData.myPattern=await userDatabase.getStoredPattern();
+    gameData.notifyUI();
     await startTCP(tcpPort);
     await UDPBroadCaster(ip, tcpPort, udpTag, udpPort);
   }
@@ -114,6 +125,8 @@ class Server {
     String udpTag,
     int udpPort,
   ) async {
+    gameData.connectionStatus.setStatus(Status.discovering,message: "Scanning Players.");
+    gameData.notifyUI();
     udpSocket = await RawDatagramSocket.bind(
       InternetAddress.anyIPv4,
       0,
@@ -150,14 +163,23 @@ class Server {
         id = clientSendDto.id ?? id;
         client.name = clientSendDto.name;
         client.hasWon = clientSendDto.isWon;
+        if(client.hasWon){
+          gameData.addWonPlayer(client.id);
+          getTurnIdONTurnRemove(client.id);
+        }
         client.isReadyToPlay = clientSendDto.isReady;
         client.gotPattern = clientSendDto.gotPattern;
         client.pattern = clientGamePattern;
-        sendPatternToAllTheClientWhoHaventGot();
-        updateGameClickedPattern(clientSendDto.recentlyClicked!);
+        client.noOfPatternMatched=clientSendDto.noOfPatternMatched;
+        gameData.updateGameClickedPattern(clientSendDto.recentlyClicked!);
         getNextTurn();
-        //HANDLE THE SERVER PLAYER
+        sendPatternToAllTheClientWhoHaventGot();
         _sendGameDataToAllTheClients();
+        gameData.calculate();
+        if(gameData.wonList.contains(serverClient.id)){
+          serverClient.hasWon=true;
+        }
+        gameData.notifyUI();
       },
       onError: (error) {
         _handleTheRemovalOfTheClient(clientSocket, id);
@@ -175,17 +197,35 @@ class Server {
   void _handleTheRemovalOfTheClient(Socket clientsocket, int id) {
     clients.removeWhere((client)=>client.clientSocket==clientsocket);
     clientsocket.destroy();
-    getTurnIdOnClientCommunicationError(id);
+    getTurnIdONTurnRemove(id);
     _sendGameDataToAllTheClients();
+    gameData.notifyUI();
   }
-
+  void sendDataFromServerPlayerToOtherPlayers(ClientSendDto CSDTO){
+        serverClient.hasWon = CSDTO.isWon;
+        if(serverClient.hasWon){
+          gameData.addWonPlayer(serverClient.id);
+          getTurnIdONTurnRemove(serverClient.id);
+        }
+        serverClient.isReadyToPlay = CSDTO.isReady;
+        gameData.gameStarted=CSDTO.isReady;
+        serverClient.gotPattern = CSDTO.gotPattern;
+        serverClient.noOfPatternMatched=CSDTO.noOfPatternMatched;
+        gameData.updateGameClickedPattern(CSDTO.recentlyClicked!);
+        getNextTurn();
+        if(gameData.gameStarted){
+          startGame();
+        }
+        sendPatternToAllTheClientWhoHaventGot();
+        _sendGameDataToAllTheClients();
+  }
   void sendPatternToAllTheClientWhoHaventGot() {
-    if (!gameStarted) {
+    if (!gameData.gameStarted) {
       ServerSendDto serverSendDto = ServerSendDto(
         playersWithId: getClientsWithId(),
         readyPlayers: getReadyPlayers(),
-        gameStarted: gameStarted,
-      );
+        gameStarted:gameData.gameStarted,
+      ); 
       List<int> pattern;
       for (ClientData client in clients) {
         if(client.id==0)continue;
@@ -195,7 +235,7 @@ class Server {
             id: client.id,
             pattern: pattern,
           );
-          serverSendDto.gamePattern = gameClickedPattern;
+          serverSendDto.gameClickedPattern = gameData.gameClickedPattern;
           serverSendDto.wonList = getWonList();
           Map<String, dynamic> messageJson = serverSendDto.toJson();
           sendMessage(messageJson);
@@ -203,16 +243,28 @@ class Server {
       }
     }
   }
+  void startGame(){
+    gameData.gameStarted=true;
+    gameData.connectionStatus.setStatus(Status.idle,message: "Inside the game");
+    gameData.notifyUI();
+  }
+  void removeClient(int id){
+    clients.removeWhere((client)=>client.id==id);
+  }
 
   void _sendGameDataToAllTheClients() {
     ServerSendDto serverSendDto = ServerSendDto(
       playersWithId: getClientsWithId(),
       readyPlayers: getReadyPlayers(),
-      gameStarted: gameStarted,
-      gamePattern: gameClickedPattern,
+      gameStarted:gameData.gameStarted,
+      gameClickedPattern: gameData.gameClickedPattern,
       wonList: getWonList(),
-      turnId: turnId,
+      turnId: gameData.turnId,
     );
+    gameData.setPlayersWithId(getClientsWithId());
+    gameData.readyPlayers=getReadyPlayers();
+    gameData.wonList=getWonList();
+
     Map<String, dynamic> messageJson = serverSendDto.toJson();
     sendMessage(messageJson);
   }
@@ -235,6 +287,7 @@ class Server {
   }
 
   stopCommunication() {
+    UserDatabase.instance.updatePattern(generatePattern(140));
     stopScanningDevices();
     for (ClientData client in clients) {
       client.clientSocket.destroy();
@@ -242,6 +295,7 @@ class Server {
     sub.cancel();
     serverSocket.close();
     clients.clear();
+    GameData.instance.clear();
   }
   void handleTheServerPlayer(){
     

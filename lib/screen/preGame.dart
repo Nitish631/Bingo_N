@@ -13,17 +13,17 @@ class _PreGamePageState extends State<PreGamePage> {
   String? name;
   @override
   void initState() {
-    super.initState();
     _loadUser();
+    super.initState();
   }
    Future<void>_loadUser()async{
     final userData=UserDatabase.instance;
-     name=await userData.getUserName();      
+    name=await userData.getUserName();      
     setState((){});
    }
   @override
   Widget build(BuildContext context) {
-    if(name!.isNotEmpty){
+    if(!(name==null)){
       Future.microtask((){
         if(mounted){
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>Rolepage()));

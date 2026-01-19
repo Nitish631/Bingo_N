@@ -1,4 +1,7 @@
-import 'package:bingo_n/screen/GamingPage.dart';
+import 'package:bingo_n/database/userInfo.dart';
+import 'package:bingo_n/screen/RolePage.dart';
+import 'package:bingo_n/screen/nameInput.dart';
+import 'package:bingo_n/screen/preGame.dart';
 import 'package:flutter/material.dart';
 class EntryPage extends StatefulWidget {
   const EntryPage({super.key});
@@ -6,21 +9,20 @@ class EntryPage extends StatefulWidget {
   @override
   State<EntryPage> createState() => _NamePageState();
 }
-double opacityForSecond(double value){
-  if(value<=140){
-    return value/140;
-  }else if(value>140 && value<=240){
-    return (240-value)/100;
-  }else{
-    return 0;
-  }
-}
-double opacityForFirst(double value){
-  if(value<=290)return 0; 
-  return 1;
-  // return (400-value)/150;
-}
 class _NamePageState extends State<EntryPage> {
+  double opacityForSecond(double value){
+    if(value<=140){
+      return value/140;
+    }else if(value>140 && value<=240){
+      return (240-value)/100;
+    }else{
+      return 0;
+    }
+  }
+  double opacityForFirst(double value){
+    if(value<=290)return 0; 
+    return 1;
+  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -33,7 +35,7 @@ class _NamePageState extends State<EntryPage> {
             tween: Tween<double>(begin: 40,end: 400),
             duration:const Duration(seconds: 4),
             onEnd: () {
-              // Navigator.pushReplacement(context,MaterialPageRoute(builder: (context)=>Gamingpage()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>PreGamePage()));
             } ,
             builder:(context,value,child){
               return Stack(

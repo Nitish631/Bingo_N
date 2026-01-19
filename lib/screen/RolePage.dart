@@ -1,5 +1,5 @@
-import 'package:bingo_n/screen/ClientGamePage.dart';
-import 'package:bingo_n/screen/HostGamePage.dart';
+import 'package:bingo_n/screen/ClientGameLobby.dart';
+import 'package:bingo_n/screen/HostGameLobby.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -41,7 +41,7 @@ class Rolepage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (builder) => HostGamePage()),
+                        MaterialPageRoute(builder: (builder) => HostGameLobby()),
                       );
                     },
                     
@@ -52,11 +52,14 @@ class Rolepage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         color: Color.fromRGBO(21, 0, 255, 1)
                       ),
-                      child: Text(
-                        "HOST",
-                        style: TextStyle(
-                          color: Color.fromRGBO(255, 187, 0, 1),
-                          fontWeight: FontWeight.bold,
+                      child: Center(
+                        child: Text(
+                          "HOST",
+                          style: TextStyle(
+                            color: Color.fromRGBO(255, 187, 0, 1),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18
+                          ),
                         ),
                       ),
                     ),
@@ -65,7 +68,7 @@ class Rolepage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (builder) => ClientGamePage()),
+                        MaterialPageRoute(builder: (builder) => ClientGameLobby()),
                       );
                     },
                     child: Container(
@@ -75,11 +78,14 @@ class Rolepage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         color: Color.fromRGBO(21, 0, 255, 1)
                       ),
-                      child: Text(
-                        "USER",
-                        style: TextStyle(
-                          color: Color.fromRGBO(255, 187, 0, 1),
-                          fontWeight: FontWeight.bold,
+                      child: Center(
+                        child: Text(
+                          "USER",
+                          style: TextStyle(
+                            color: Color.fromRGBO(255, 187, 0, 1),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18
+                          ),
                         ),
                       ),
                     ),

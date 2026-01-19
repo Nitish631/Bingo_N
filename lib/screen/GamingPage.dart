@@ -1,9 +1,6 @@
-// import 'package:bingo_n/GameState/state.dart';
 import 'package:bingo_n/screen/wonPage.dart';
 import 'package:flutter/material.dart';
-// import 'package:bingo_n/main.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path/path.dart';
 
 class Gamingpage extends StatefulWidget {
   const Gamingpage({super.key});

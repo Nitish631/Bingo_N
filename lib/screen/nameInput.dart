@@ -15,6 +15,8 @@ class _NameInputPageState extends State<NameInputPage> {
   late FocusNode nameFocus;
   late UserDatabase dbInst;
   late String myName;
+  String labelText = "Player Name:";
+  Color labelStyleColor=Colors.brown;
 
   @override
   void initState() {
@@ -33,9 +35,15 @@ class _NameInputPageState extends State<NameInputPage> {
 
   Future<void> _saveName() async {
     final enteredName = nameFieldController.text.trim();
-    if (enteredName.isEmpty) return;
+    if (enteredName.isEmpty) {
+      setState(() {
+        labelStyleColor=Colors.red;
+        labelText = "Name is compulsary.";
+      });
+      return;
+    }
     await dbInst.updateName(enteredName);
-    myName=enteredName;
+    myName = enteredName;
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
@@ -49,7 +57,7 @@ class _NameInputPageState extends State<NameInputPage> {
       body: Scaffold(
         body: Container(
           decoration: BoxDecoration(
-            gradient:LinearGradient(
+            gradient: LinearGradient(
               colors: [
                 Color.fromRGBO(255, 0, 160, 1),
                 Color.fromRGBO(170, 0, 255, 1),
@@ -63,37 +71,60 @@ class _NameInputPageState extends State<NameInputPage> {
           child: Center(
             child: Container(
               height: 200,
-              width: 200,
-              // color: Colors.cyanAccent,
+              width: 300,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  TextField(
-                    controller: nameFieldController,
-                    focusNode: nameFocus,
-                    style: TextStyle(color: Colors.deepPurple,fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.cyanAccent.shade100,
-                      labelText: "Player's Name",
-                      labelStyle: TextStyle(color: Colors.brown,fontWeight: FontWeight.bold),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
+                  Container(
+                    height: 60,
+                    width: 250,
+                    padding: EdgeInsets.symmetric(horizontal: 5,vertical: 3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.rectangle,
+                      color: Colors.cyanAccent.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: TextField(
+                        onTap: () {
+                          setState(() {
+                            labelStyleColor=Colors.brown;
+                            labelText = "Player Name:";
+                          });
+                        },
+                        controller: nameFieldController,
+                        focusNode: nameFocus,
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.cyanAccent.shade100,
+                          labelText: labelText,
+                          labelStyle: TextStyle(
+                            color: labelStyleColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide.none
+                          )
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: 150,
+                  Container(
+                    width: 120,
+                    height: 50,
                     child: TextButton(
                       onPressed: _saveName,
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.deepOrange,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadiusGeometry.circular(12),
-                        )
+                        ),
                       ),
                       child: Text(
                         "Save",

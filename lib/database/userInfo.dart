@@ -38,11 +38,17 @@ class UserDatabase{
     final result= await db.update('user',{'pattern':jsonEncode(pattern)},where:'id=?',whereArgs:[1]);
     return result>0;
   }
-  Future<String> getUserName() async{
+  Future<String?> getUserName() async{
     final db =await database;
-    final result=await db.query('user',where: 'id=?',whereArgs: [1]);
-    final user=result.first;
-    return user['name'] as String;
+    final result=await db.query('user',columns: ['name'],where: 'id=?',whereArgs: [1],limit: 1);
+    if(result.isEmpty){
+      return null;
+    }
+    final name=result.first['name'] as String;
+    if(name==null || name.trim().isEmpty){
+      return null;
+    }
+    return name;
   }
   Future<List<int>> getStoredPattern()async{
     final db=await database;

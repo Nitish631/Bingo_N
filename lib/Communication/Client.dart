@@ -6,6 +6,7 @@ import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/DTOs/ServerSendDto.dart';
 import 'package:bingo_n/Extensions/TcpExtension.dart';
+import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/database/userInfo.dart';
 
@@ -22,7 +23,7 @@ class Client {
   late StreamSubscription tcpSub;
   late ServerSendDto serverSendDto;
   late GameData gameData;
-  late String clientName;
+  String? clientName;
 
   void start() async {
     udpPort = net.udpPort;
@@ -30,19 +31,21 @@ class Client {
     udpTag = net.udpTag;
     userDatabase = UserDatabase.instance;
     gameData = GameData.instance;
+    gameData.clear();
     clientName = await userDatabase.getUserName();
     clientSendDto.gotPattern = false;
     clientSendDto.isReady = false;
     clientSendDto.isWon = false;
-    clientSendDto.name = clientName;
+    clientSendDto.name = clientName!;
     _discoverAndConnect();
   }
-   void restartConnection(){
+
+  void restartConnection() {
     dispose();
     start();
-   }
+  }
 
-  void dispose(){
+  void dispose() {
     _handleTheDisconnectionWithServer();
   }
 
@@ -63,11 +66,18 @@ class Client {
     Map<String, dynamic> msgJson = csd.toJson();
     String msg = jsonEncode(msgJson);
     try {
-      tcpSocket.write('$msg\n');// tcpSocket.add(utf8.encode('$msg\n'));
+      tcpSocket.write('$msg\n'); // tcpSocket.add(utf8.encode('$msg\n'));
     } catch (e) {
+      if (gameData.gameStarted) {
+        gameData.goBackToLobby = true;
+      }
+      gameData.showReconnectButton = true;
+      gameData.connectionStatus.setStatus(
+        Status.disconnected,
+        message: "Connection loss!",
+      );
+      gameData.notifyUI();
       _handleTheDisconnectionWithServer();
-      //NOTIFY THE USER THAT THE CONNECTION IS LOSS.
-      //BACK FROM THE GAME
     }
   }
 
@@ -87,19 +97,40 @@ class Client {
 
   Future<void> _discoverAndConnect() async {
     try {
+      gameData.connectionStatus.setStatus(
+        Status.discovering,
+        message: "Scanning for host",
+      );
+      gameData.notifyUI();
       (String, int)? host = await _discoverHost(timeout: Duration(seconds: 10));
       if (host == null) {
-        //NOTIFY THE USER THAT THE CONNECTION IS LOSS
+        if (gameData.gameStarted) {
+          gameData.goBackToLobby = true;
+        }
+        gameData.connectionStatus.setStatus(
+          Status.error,
+          message: "No host found",
+        );
+        gameData.notifyUI();
         return;
       }
       serverIPAddress = host.$1;
-      //NOTIFY THE USER THAT THE "CONNECTING THE HOST"
+      gameData.connectionStatus.setStatus(
+        Status.connecting,
+        message: "Connecting to host",
+      );
+      gameData.notifyUI();
       tcpSocket = await Socket.connect(
         host.$1,
         host.$2,
         timeout: const Duration(seconds: 5),
       );
       _send(clientSendDto);
+      gameData.connectionStatus.setStatus(
+        Status.connected,
+        message: "Connected",
+      );
+      gameData.notifyUI();
       tcpSub = tcpSocket.lines.listen(
         (line) {
           Map<String, dynamic> msgJson = jsonDecode(line);
@@ -113,20 +144,47 @@ class Client {
             gameData.turnId = serverSendDto.turnId!;
             gameData.myPattern = serverSendDto.clientIdWithPattern!.pattern;
             gameData.setId(getMyId());
-            //NOTIFY THE USER FOR THE CHANGE OF THE UI ON THE BASIS OF THE GAMEDATA SINGLETON
+            gameData.notifyUI();
+            // NECESSARY DO THE BELOW TASK
+            //CHECK THE STATE AND SEND THE DATA TO THE SERVER
           }
         },
         onError: (e) {
+          if (gameData.gameStarted) {
+            gameData.goBackToLobby = true;
+          }
+          gameData.showReconnectButton = true;
+          gameData.connectionStatus.setStatus(
+            Status.disconnected,
+            message: "Disconnected",
+          );
+          gameData.notifyUI();
           _handleTheDisconnectionWithServer();
-          // NOTIFY USER ABOUT THE ERROT IN COMMUNICATION AND EXIT THE GAME.
         },
-        onDone: (){
+        onDone: () {
+          if (gameData.gameStarted) {
+            gameData.goBackToLobby = true;
+          }
+          gameData.showReconnectButton = true;
+          gameData.connectionStatus.setStatus(
+            Status.disconnected,
+            message: "Disconnected",
+          );
+          gameData.notifyUI();
           _handleTheDisconnectionWithServer();
-          //EXIT THE GAME
-        }
+        },
       );
     } catch (e) {
-      //NOTIFY THE PLAYER THAT THE CONNETION IS FAILED THROUGH THE UI
+      if (gameData.gameStarted) {
+        gameData.goBackToLobby = true;
+      }
+      gameData.showReconnectButton = true;
+      gameData.connectionStatus.setStatus(
+        Status.disconnected,
+        message: "Disconnected",
+      );
+      gameData.notifyUI();
+      _handleTheDisconnectionWithServer();
     }
   }
 

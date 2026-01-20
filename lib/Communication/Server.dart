@@ -175,7 +175,7 @@ class Server {
         getNextTurn();
         sendPatternToAllTheClientWhoHaventGot();
         _sendGameDataToAllTheClients();
-        gameData.calculate();
+        gameData.calculateWon();
         if(gameData.wonList.contains(serverClient.id)){
           serverClient.hasWon=true;
         }

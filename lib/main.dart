@@ -1,5 +1,6 @@
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/database/userInfo.dart';
+import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/screen/RolePage.dart';
 // import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home:Rolepage()
+      home:Gamingpage()
     );
   }
 }

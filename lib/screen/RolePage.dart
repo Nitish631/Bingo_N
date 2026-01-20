@@ -55,7 +55,7 @@ class Rolepage extends StatelessWidget {
                       child: Center(
                         child: Text(
                           "HOST",
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             color: Color.fromRGBO(255, 187, 0, 1),
                             fontWeight: FontWeight.bold,
                             fontSize: 18
@@ -81,7 +81,7 @@ class Rolepage extends StatelessWidget {
                       child: Center(
                         child: Text(
                           "USER",
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             color: Color.fromRGBO(255, 187, 0, 1),
                             fontWeight: FontWeight.bold,
                             fontSize: 18

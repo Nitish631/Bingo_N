@@ -1,7 +1,6 @@
+import 'package:bingo_n/Dummy/GamingPage.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/database/userInfo.dart';
-import 'package:bingo_n/screen/GamingPage.dart';
-import 'package:bingo_n/screen/RolePage.dart';
 // import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
 void main(List<String> args) async{
@@ -23,9 +22,10 @@ class Game extends StatefulWidget {
 class _GameState extends State<Game> {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home:Gamingpage()
+      theme: ThemeData(scaffoldBackgroundColor: Color.fromRGBO(0, 44, 75, 1)),
+      home:GamingPage()
     );
   }
 }

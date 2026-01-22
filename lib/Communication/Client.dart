@@ -25,6 +25,9 @@ class Client {
   late GameData gameData;
   String? clientName;
 
+  static Client instance=Client._init();
+  Client._init();
+
   void start() async {
     udpPort = net.udpPort;
     tcpPort = net.tcpPort;

@@ -1,10 +1,13 @@
+import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/screen/ClientGameLobby.dart';
 import 'package:bingo_n/screen/HostGameLobby.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+
 class Rolepage extends StatelessWidget {
-  const Rolepage({super.key});
+  Rolepage({super.key});
+  final gameData=GameData.instance;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,6 +42,7 @@ class Rolepage extends StatelessWidget {
                 children: [
                   InkWell(
                     onTap: () {
+                      gameData.isServer=true;
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (builder) => HostGameLobby()),
@@ -66,9 +70,10 @@ class Rolepage extends StatelessWidget {
                   ),
                   InkWell(
                     onTap: () {
+                      gameData.isServer=false;
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (builder) => ClientGameLobby()),
+                        MaterialPageRoute(builder: (builder) => HostGameLobby()),
                       );
                     },
                     child: Container(

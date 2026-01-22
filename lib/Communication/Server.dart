@@ -14,7 +14,10 @@ import 'package:bingo_n/database/userInfo.dart';
 
 class Server {
   static Server instance=Server._init();
-  Server._init();
+  Server._init(){
+    gameData=GameData.instance;
+    gameData.attachServer(this);
+  }
   late Timer becon;
   // late Timer gameDataSendingTimer;
   late RawDatagramSocket udpSocket;
@@ -27,7 +30,7 @@ class Server {
   late ServerSocket serverSocket;
   late Set<ClientData> clients=<ClientData>{};
   ClientData serverClient=ClientData.minimal(id: 0);
-  GameData gameData=GameData.instance;
+  late GameData gameData;
   late List<int> turnPattern;
   Map<int, String> getClientsWithId() {
     Map<int, String> nameWithId = {};
@@ -248,6 +251,7 @@ class Server {
     gameData.notifyUI();
   }
   void removeClient(int id){
+    print("Client removed");
     clients.removeWhere((client)=>client.id==id);
   }
 

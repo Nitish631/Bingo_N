@@ -111,6 +111,8 @@ class _GamingPageState extends State<GamingPage> {
                                         width: width * 5 / 7,
                                         height: width * 5 / 7,
                                         child: GridView.builder(
+                                          itemCount: 25,
+                                          physics: const NeverScrollableScrollPhysics(),
                                           gridDelegate:
                                               SliverGridDelegateWithFixedCrossAxisCount(
                                                 crossAxisCount: 5,

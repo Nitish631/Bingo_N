@@ -15,6 +15,7 @@ class _GamingPageState extends State<GamingPage> {
   Color ClickedContainerColor=const Color.fromARGB(170, 0, 213, 255);
   @override
   Widget build(BuildContext context) {
+
     double width = MediaQuery.of(context).size.width * 0.9;
     double height = width * 6 / 7;
     return Scaffold(
@@ -127,24 +128,14 @@ class _GamingPageState extends State<GamingPage> {
                                             bool clicked=gameData.isClicked(element);
                                             return InkWell(
                                               onTap: () {
-                                                int num;
                                                 if (gameData.isMyTurn()) {
-                                                  try {
-                                                    num = int.parse(
-                                                      gameData
-                                                          .getElementOfIndexOfMyPattern(
-                                                            index,
-                                                          ),
-                                                    );
-                                                  } catch (e) {
-                                                    num = -1;
-                                                  }
                                                   gameData
                                                       .updateGameClickedPattern(
-                                                        num,
+                                                        element,
                                                       );
                                                 }
                                                 gameData.calculateWon();
+                                                gameData.sendDataForCommunication();
                                               },
                                               child: Container(
                                                 color: clicked?ClickedContainerColor:unClickedContainerColor,

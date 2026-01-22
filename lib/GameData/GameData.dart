@@ -1,9 +1,10 @@
+import 'package:bingo_n/Communication/Server.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:flutter/material.dart';
 
 class GameData extends ChangeNotifier {
   late Map<int, String> playersWithId;
-  bool gameStarted = true;//
+  bool gameStarted = false;//
   List<int> readyPlayers=[];
   List<int> gameClickedPattern = [];
   List<int> wonList=[];
@@ -19,9 +20,11 @@ class GameData extends ChangeNotifier {
   List<String> matchingString=['B','I','N','G','O'];
   int count=0;
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
+  bool isServer=true;
 
   static final GameData instance = GameData._init();
   GameData._init();
+  Server server=Server.instance;
 
 final List<List<int>> winningList = [
   [0, 1, 2, 3, 4],//0
@@ -161,5 +164,18 @@ final List<List<int>> winningList = [
   }
   bool isMyTurn(){
     return turnId==myId;
+  }
+  void sendDataForCommunication(){
+    if(isServer){
+      server.sendGameDataToAllTheClients();
+    }else{
+      //HANDLE CLIENT COMMUNICATION
+    }
+  }
+  void removeClient(int id){
+    server.removeClient(id);
+    playersWithId.remove(id);
+    notifyListeners();
+    server.sendGameDataToAllTheClients();
   }
 }

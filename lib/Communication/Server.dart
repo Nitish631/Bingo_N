@@ -13,6 +13,8 @@ import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/database/userInfo.dart';
 
 class Server {
+  static Server instance=Server._init();
+  Server._init();
   late Timer becon;
   // late Timer gameDataSendingTimer;
   late RawDatagramSocket udpSocket;
@@ -25,11 +27,8 @@ class Server {
   late ServerSocket serverSocket;
   late Set<ClientData> clients=<ClientData>{};
   ClientData serverClient=ClientData.minimal(id: 0);
-  // List<int> gameData.gameClickedPattern = [];
   GameData gameData=GameData.instance;
-  // bool gameStarted = false; //CHANGE LATER FROM UI
   late List<int> turnPattern;
-  // int gameData.turnId = -1;
   Map<int, String> getClientsWithId() {
     Map<int, String> nameWithId = {};
     for (ClientData client in clients) {
@@ -173,12 +172,12 @@ class Server {
         client.noOfPatternMatched=clientSendDto.noOfPatternMatched;
         gameData.updateGameClickedPattern(clientSendDto.recentlyClicked!);
         getNextTurn();
-        sendPatternToAllTheClientWhoHaventGot();
-        _sendGameDataToAllTheClients();
         gameData.calculateWon();
         if(gameData.wonList.contains(serverClient.id)){
           serverClient.hasWon=true;
         }
+        sendPatternToAllTheClientWhoHaventGot();
+        _sendGameDataToAllTheClients();
         gameData.notifyUI();
       },
       onError: (error) {
@@ -264,6 +263,19 @@ class Server {
     gameData.setPlayersWithId(getClientsWithId());
     gameData.readyPlayers=getReadyPlayers();
     gameData.wonList=getWonList();
+
+    Map<String, dynamic> messageJson = serverSendDto.toJson();
+    sendMessage(messageJson);
+  }
+  void sendGameDataToAllTheClients(){
+    ServerSendDto serverSendDto = ServerSendDto(
+      playersWithId: gameData.playersWithId,
+      readyPlayers: gameData.readyPlayers,
+      gameStarted:gameData.gameStarted,
+      gameClickedPattern: gameData.gameClickedPattern,
+      wonList: gameData.wonList,
+      turnId: gameData.turnId,
+    );
 
     Map<String, dynamic> messageJson = serverSendDto.toJson();
     sendMessage(messageJson);

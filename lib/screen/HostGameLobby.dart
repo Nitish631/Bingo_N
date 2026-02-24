@@ -133,7 +133,7 @@ class _HostGameLobbyState extends State<HostGameLobby> {
                         width: 100,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: Color.fromRGBO(122, 95, 0, 1),
+                          color: Color.fromRGBO(223, 72, 2, 1),
                         ),
                         child: InkWell(
                           onTap: () {
@@ -149,7 +149,7 @@ class _HostGameLobbyState extends State<HostGameLobby> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: const Color.fromARGB(255, 0, 255, 255),
                                 ),
                               ),
                             ),

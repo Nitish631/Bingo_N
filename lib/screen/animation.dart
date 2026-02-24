@@ -1,6 +1,3 @@
-import 'package:bingo_n/database/userInfo.dart';
-import 'package:bingo_n/screen/RolePage.dart';
-import 'package:bingo_n/screen/nameInput.dart';
 import 'package:bingo_n/screen/preGame.dart';
 import 'package:flutter/material.dart';
 class EntryPage extends StatefulWidget {

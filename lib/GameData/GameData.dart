@@ -10,11 +10,11 @@ class GameData extends ChangeNotifier {
     412: "David",
     518: "Emma",
   };
-  bool gameStarted = false; //
+  bool gameStarted = true; //
   List<int> readyPlayers = [];
   List<int> gameClickedPattern = [];
   List<int> wonList = [];
-  late int turnId = 1;
+  late int turnId = 412;
   List<int> myPattern = [
     23,
     16,
@@ -238,5 +238,8 @@ class GameData extends ChangeNotifier {
     }
     notifyListeners();
     return count;
+  }
+  bool isTurnOfId(int id){
+    return turnId==id;
   }
 }

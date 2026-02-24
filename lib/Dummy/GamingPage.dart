@@ -11,11 +11,18 @@ class GamingPage extends StatefulWidget {
 
 class _GamingPageState extends State<GamingPage> {
   GameData gameData = GameData.instance;
-  Color unClickedContainerColor=const Color.fromARGB(255,0,213,255,);
-  Color ClickedContainerColor=const Color.fromARGB(170, 0, 213, 255);
+  late List playersIdlist;
+  Color unClickedContainerColor = const Color.fromARGB(255, 0, 213, 255);
+  Color ClickedContainerColor = const Color.fromARGB(170, 0, 213, 255);
+  @override
+  void initState() {
+    // TODO: implement initState
+    playersIdlist = List.from(gameData.playersWithId.keys);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-
     double width = MediaQuery.of(context).size.width * 0.9;
     double height = width * 6 / 7;
     return Scaffold(
@@ -29,7 +36,7 @@ class _GamingPageState extends State<GamingPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
-                  flex: 3,
+                  flex: 9,
                   child: Container(
                     child: Center(
                       child: Container(
@@ -112,7 +119,8 @@ class _GamingPageState extends State<GamingPage> {
                                         height: width * 5 / 7,
                                         child: GridView.builder(
                                           itemCount: 25,
-                                          physics: const NeverScrollableScrollPhysics(),
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
                                           gridDelegate:
                                               SliverGridDelegateWithFixedCrossAxisCount(
                                                 crossAxisCount: 5,
@@ -122,12 +130,19 @@ class _GamingPageState extends State<GamingPage> {
                                               ),
                                           itemBuilder: (context, index) {
                                             int element;
-                                            try{
-                                              element=int.parse(gameData.getElementOfIndexOfMyPattern(index));
-                                            }catch(e){
-                                              element=-1;
+                                            try {
+                                              element = int.parse(
+                                                gameData
+                                                    .getElementOfIndexOfMyPattern(
+                                                      index,
+                                                    ),
+                                              );
+                                            } catch (e) {
+                                              element = -1;
                                             }
-                                            bool clicked=gameData.isClicked(element);
+                                            bool clicked = gameData.isClicked(
+                                              element,
+                                            );
                                             return InkWell(
                                               onTap: () {
                                                 if (gameData.isMyTurn()) {
@@ -137,10 +152,13 @@ class _GamingPageState extends State<GamingPage> {
                                                       );
                                                 }
                                                 gameData.calculateWon();
-                                                gameData.sendDataForCommunication();
+                                                gameData
+                                                    .sendDataForCommunication();
                                               },
                                               child: Container(
-                                                color: clicked?ClickedContainerColor:unClickedContainerColor,
+                                                color: clicked
+                                                    ? ClickedContainerColor
+                                                    : unClickedContainerColor,
                                                 alignment: Alignment.center,
                                                 child: Text(
                                                   gameData
@@ -164,7 +182,64 @@ class _GamingPageState extends State<GamingPage> {
                     ),
                   ),
                 ),
-                Expanded(flex: 1, child: Container(color: Colors.red)),
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                    child: Column(
+                      children: [
+                        Expanded(child: Container()),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          itemCount: playersIdlist.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 5,
+                            crossAxisSpacing: 5,
+                            childAspectRatio: 1.5,
+                          ),
+                          physics: NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            String? name = gameData
+                                .playersWithId[playersIdlist.elementAt(index)];
+                            return Container(
+                              height: double.infinity,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color.fromRGBO(33, 251, 0, 1),
+                                    Color.fromRGBO(51, 159, 0, 1),
+                                  ],
+                                  begin: AlignmentGeometry.directional(0, 0),
+                                  end: AlignmentGeometry.directional(1, 1),
+                                ),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  name!,
+                                  style: GoogleFonts.poppins(
+                                    fontSize:gameData.isTurnOfId(
+                                          playersIdlist.elementAt(index),
+                                        )? 25:20,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        gameData.isTurnOfId(
+                                          playersIdlist.elementAt(index),
+                                        )
+                                        ? Color.fromRGBO(255, 0, 234, 1)
+                                        : Color.fromRGBO(112, 0, 0, 1),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           );

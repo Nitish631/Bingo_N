@@ -174,6 +174,7 @@ class Server {
         client.pattern = clientGamePattern;
         client.noOfPatternMatched=clientSendDto.noOfPatternMatched;
         gameData.updateGameClickedPattern(clientSendDto.recentlyClicked!);
+        gameData.recentlyClicked=clientSendDto.recentlyClicked??-11;
         getNextTurn();
         gameData.calculateWon();
         if(gameData.wonList.contains(serverClient.id)){
@@ -239,6 +240,7 @@ class Server {
           );
           serverSendDto.gameClickedPattern = gameData.gameClickedPattern;
           serverSendDto.wonList = getWonList();
+          serverSendDto.recentlyClicked=gameData.recentlyClicked;
           Map<String, dynamic> messageJson = serverSendDto.toJson();
           sendMessage(messageJson);
         }
@@ -267,7 +269,7 @@ class Server {
     gameData.setPlayersWithId(getClientsWithId());
     gameData.readyPlayers=getReadyPlayers();
     gameData.wonList=getWonList();
-
+    serverSendDto.recentlyClicked=gameData.recentlyClicked;
     Map<String, dynamic> messageJson = serverSendDto.toJson();
     sendMessage(messageJson);
   }

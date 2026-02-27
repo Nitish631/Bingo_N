@@ -146,8 +146,12 @@ class Client {
             gameData.wonList = serverSendDto.wonList!;
             gameData.turnId = serverSendDto.turnId!;
             gameData.myPattern = serverSendDto.clientIdWithPattern!.pattern;
+            gameData.recentlyClicked=serverSendDto.recentlyClicked;
             gameData.setId(getMyId());
+            gameData.updateGameClickedPattern(serverSendDto.recentlyClicked);
+            gameData.calculateWon();
             gameData.notifyUI();
+            gameData.sendDataForCommunication();
             // NECESSARY DO THE BELOW TASK
             //CHECK THE STATE AND SEND THE DATA TO THE SERVER
           }
@@ -218,5 +222,8 @@ class Client {
       }
     });
     return completer.future;
+  }
+  void sendMessageToServer(ClientSendDto clientSendDto){
+    _send(clientSendDto);
   }
 }

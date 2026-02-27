@@ -1,4 +1,6 @@
+import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/Communication/Server.dart';
+import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:flutter/material.dart';
 
@@ -10,11 +12,11 @@ class GameData extends ChangeNotifier {
     412: "David",
     518: "Emma",
   };
-  bool gameStarted = true; //
-  List<int> readyPlayers = [];
+  bool gameStarted = false; //
+  List<int> readyPlayers = [518, 412]; //
   List<int> gameClickedPattern = [];
   List<int> wonList = [];
-  late int turnId = 412;
+  late int turnId = 205; //
   List<int> myPattern = [
     23,
     16,
@@ -43,8 +45,9 @@ class GameData extends ChangeNotifier {
     18,
   ];
   List<int> indexClickedPattern = [];
-  int _myId = 1; //
-  late String name;
+  int _myId = 205; //
+  // late String name;//
+  String name = "Bob";
   bool showReconnectButton = false;
   bool goBackToLobby = false;
   List<int> indexesOfWonPatternMatched = [];
@@ -52,13 +55,19 @@ class GameData extends ChangeNotifier {
   List<String> matchingString = ['B', 'I', 'N', 'G', 'O'];
   int count = 0;
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
-  bool isServer = true;
+  bool isServer = false;
+  int recentlyClicked=-11;
 
   static final GameData instance = GameData._init();
   GameData._init();
   Server? _server;
+  Client? _client;
   void attachServer(Server server) {
     _server = server;
+  }
+
+  void attachClient(Client client) {
+    _client = client;
   }
 
   final List<List<int>> winningList = [
@@ -111,6 +120,24 @@ class GameData extends ChangeNotifier {
   }
 
   void notifyUI() {
+    notifyListeners();
+  }
+
+  void notifyReadyToServer(bool ready) {
+    ClientSendDto clientSendDto = ClientSendDto(
+      name: name,
+      isWon: false,
+      isReady: ready,
+      id: myId,
+      gotPattern: myPattern.isNotEmpty,
+      noOfPatternMatched: 0,
+    );
+    _client?.sendMessageToServer(clientSendDto);
+    if (ready) {
+      readyPlayers.add(_myId);
+    } else {
+      readyPlayers.remove(_myId);
+    }
     notifyListeners();
   }
 
@@ -213,8 +240,18 @@ class GameData extends ChangeNotifier {
     if (isServer) {
       _server!.sendGameDataToAllTheClients();
     } else {
-      //HANDLE CLIENT COMMUNICATION
+      ClientSendDto clientSendDto = ClientSendDto(
+        name: name,
+        isWon: wonList.contains(myId),
+        isReady: readyPlayers.contains(myId),
+        gotPattern: myPattern.isNotEmpty,
+        noOfPatternMatched: indexesOfWonPatternMatched.length,
+      );
+      clientSendDto..id=myId
+      ..recentlyClicked=recentlyClicked;
+      _client?.sendMessageToServer(clientSendDto);
     }
+    notifyListeners();
   }
 
   void removeClient(int id) {
@@ -239,7 +276,12 @@ class GameData extends ChangeNotifier {
     notifyListeners();
     return count;
   }
-  bool isTurnOfId(int id){
-    return turnId==id;
+
+  bool isTurnOfId(int id) {
+    return turnId == id;
+  }
+
+  bool isReadyPlayer(int id) {
+    return readyPlayers.contains(id);
   }
 }

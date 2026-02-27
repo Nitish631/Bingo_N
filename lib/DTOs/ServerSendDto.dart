@@ -8,6 +8,7 @@ class ServerSendDto {
   List<int>? wonList;
   int? turnId;
   PatternWithId? clientIdWithPattern; // client-specific pattern
+  int recentlyClicked=-11;
 
   ServerSendDto({
     required this.playersWithId,

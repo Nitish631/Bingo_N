@@ -26,7 +26,7 @@ class _GameState extends State<Game> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: Color.fromRGBO(0, 44, 75, 1)),
-      home:Rolepage()
+      home:GamingPage()
     );
   }
 }

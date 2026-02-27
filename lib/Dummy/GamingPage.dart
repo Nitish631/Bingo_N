@@ -17,7 +17,7 @@ class _GamingPageState extends State<GamingPage> {
   @override
   void initState() {
     // TODO: implement initState
-    playersIdlist = List.from(gameData.playersWithId.keys);
+    playersIdlist = gameData.playersWithId.entries.toList();
     super.initState();
   }
 
@@ -147,9 +147,10 @@ class _GamingPageState extends State<GamingPage> {
                                               onTap: () {
                                                 if (gameData.isMyTurn()) {
                                                   gameData
-                                                      .updateGameClickedPattern(
-                                                        element,
-                                                      );
+                                                    ..updateGameClickedPattern(
+                                                      element,
+                                                    )
+                                                    ..recentlyClicked = element;
                                                 }
                                                 gameData.calculateWon();
                                                 gameData
@@ -192,16 +193,18 @@ class _GamingPageState extends State<GamingPage> {
                         GridView.builder(
                           shrinkWrap: true,
                           itemCount: playersIdlist.length,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 5,
-                            crossAxisSpacing: 5,
-                            childAspectRatio: 1.5,
-                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 5,
+                                crossAxisSpacing: 5,
+                                childAspectRatio: 1.5,
+                              ),
                           physics: NeverScrollableScrollPhysics(),
                           itemBuilder: (context, index) {
-                            String? name = gameData
-                                .playersWithId[playersIdlist.elementAt(index)];
+                            MapEntry<int, String> entry = playersIdlist[index];
+                            int id = entry.key;
+                            String name = entry.value;
                             return Container(
                               height: double.infinity,
                               width: double.infinity,
@@ -218,16 +221,11 @@ class _GamingPageState extends State<GamingPage> {
                               ),
                               child: Center(
                                 child: Text(
-                                  name!,
+                                  name,
                                   style: GoogleFonts.poppins(
-                                    fontSize:gameData.isTurnOfId(
-                                          playersIdlist.elementAt(index),
-                                        )? 25:20,
+                                    fontSize: gameData.isTurnOfId(id) ? 25 : 20,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        gameData.isTurnOfId(
-                                          playersIdlist.elementAt(index),
-                                        )
+                                    color: gameData.isTurnOfId(id)
                                         ? Color.fromRGBO(255, 0, 234, 1)
                                         : Color.fromRGBO(112, 0, 0, 1),
                                   ),

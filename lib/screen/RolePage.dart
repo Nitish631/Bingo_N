@@ -1,11 +1,18 @@
 import 'package:bingo_n/GameData/GameData.dart';
-import 'package:bingo_n/screen/HostGameLobby.dart';
+import 'package:bingo_n/screen/GameLobby.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Rolepage extends StatelessWidget {
   Rolepage({super.key});
   final gameData = GameData.instance;
+  void navigateLobby(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (builder) => GameLobby()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,7 +38,7 @@ class Rolepage extends StatelessWidget {
                           Color.fromRGBO(255, 102, 0, 1),
                           Color.fromRGBO(255, 200, 0, 1),
                         ],
-                      ).createShader(Rect.fromLTWH(0, 0, 300, 70)),
+                      ).createShader(Rect.fromLTWH(0, 0, 250, 70)),
                   ),
                 ),
                 Row(
@@ -40,12 +47,7 @@ class Rolepage extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         gameData.isServer = true;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (builder) => HostGameLobby(),
-                          ),
-                        );
+                        navigateLobby(context);
                       },
 
                       child: Container(
@@ -70,12 +72,7 @@ class Rolepage extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         gameData.isServer = false;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (builder) => HostGameLobby(),
-                          ),
-                        );
+                        navigateLobby(context);
                       },
                       child: Container(
                         width: 120,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 class wonPage extends StatefulWidget {
-  const wonPage({super.key});
+  const wonPage({super.key}) ;
 
   @override
   State<wonPage> createState() => _wonPageState();

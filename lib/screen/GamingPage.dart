@@ -1,4 +1,5 @@
 import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/screen/wonPage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -29,6 +30,12 @@ class _GamingPageState extends State<GamingPage> {
       body: AnimatedBuilder(
         animation: GameData.instance,
         builder: (context, child) {
+          if (gameData.wonId != 0) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => wonPage()),
+            );
+          }
           return Container(
             height: double.infinity,
             width: double.infinity,
@@ -155,6 +162,16 @@ class _GamingPageState extends State<GamingPage> {
                                                 gameData.calculateWon();
                                                 gameData
                                                     .sendDataForCommunication();
+                                                gameData.hasWon();
+                                                if (gameData.wonId != 0) {
+                                                  Navigator.pushReplacement(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          wonPage(),
+                                                    ),
+                                                  );
+                                                }
                                               },
                                               child: Container(
                                                 color: clicked

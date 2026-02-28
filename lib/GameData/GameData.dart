@@ -60,7 +60,7 @@ class GameData extends ChangeNotifier {
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
   bool isServer = false;
   int recentlyClicked = -11;
-
+int wonId=0;
   static final GameData instance = GameData._init();
   GameData._init();
   UserDatabase userDatabase = UserDatabase.instance;
@@ -102,11 +102,11 @@ class GameData extends ChangeNotifier {
     // _myId ??= id;
   }
 
-  int hasWon(){
+  void hasWon(){
     if(wonList.length!=0){
-      return wonList.elementAt(0);
+      wonId= wonList.elementAt(0);
+      notifyListeners();
     }
-    return 0;
   }
 
   List<int> alterPattern(List<int> list) {

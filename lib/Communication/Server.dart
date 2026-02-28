@@ -188,6 +188,7 @@ class Server {
           serverClient.hasWon=true;
         }
         sendPatternToAllTheClientWhoHaventGot();
+        gameData.hasWon();
         _sendGameDataToAllTheClients();
         gameData.notifyUI();
       },

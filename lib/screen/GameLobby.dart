@@ -1,6 +1,6 @@
 import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/Communication/Server.dart';
-import 'package:bingo_n/Dummy/GamingPage.dart';
+import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,7 +25,6 @@ class _GameLobbyState extends State<GameLobby> {
       isServer=true;
     } else {
       Client client = Client.instance;
-      print(gameData.playersWithId);
       // client.start();
       isServer=false;
     }

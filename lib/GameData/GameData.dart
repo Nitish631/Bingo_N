@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/Communication/Server.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
+import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
 
 class GameData extends ChangeNotifier {
@@ -56,10 +59,12 @@ class GameData extends ChangeNotifier {
   int count = 0;
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
   bool isServer = false;
-  int recentlyClicked=-11;
+  int recentlyClicked = -11;
 
   static final GameData instance = GameData._init();
   GameData._init();
+  UserDatabase userDatabase = UserDatabase.instance;
+  bool storedPattern = false;
   Server? _server;
   Client? _client;
   void attachServer(Server server) {
@@ -96,6 +101,44 @@ class GameData extends ChangeNotifier {
   void setId(int? id) {
     // _myId ??= id;
   }
+  List<int> alterPattern(List<int> list) {
+    List<int> order = [0, 1, 2];
+    order.shuffle(Random());
+    List<int> pattern = List.empty();
+    order.forEach((i) {
+      switch (i) {
+        case 0:
+          for (int i = 15; i >= 8; i--) {
+            pattern.add(list.elementAt(i));
+          }
+          break;
+        case 1:
+          for (int i = 16; i < 25; i++) {
+            pattern.add(list.elementAt(i));
+          }
+          break;
+        case 2:
+          for (int i = 7; i >= 0; i--) {
+            pattern.add(list.elementAt(i));
+          }
+          break;
+      }
+    });
+    return pattern;
+  }
+
+  Future<void> saveMyPatternToDBifWon() async {
+    if (wonList.length != 0) {
+      await savePattern();
+    }
+  }
+
+  Future<void> savePattern() async {
+    if (!storedPattern) {
+      await userDatabase.updatePattern(alterPattern(myPattern));
+      storedPattern = true;
+    }
+  }
 
   void setName(String? Name) {
     if (!(Name == null)) {
@@ -116,6 +159,8 @@ class GameData extends ChangeNotifier {
     goBackToLobby = false;
     indexClickedPattern = [];
     connectionStatus.reset();
+    recentlyClicked = -11;
+    storedPattern = false;
     notifyListeners();
   }
 
@@ -171,6 +216,7 @@ class GameData extends ChangeNotifier {
     if (wonList.contains(_myId)) return;
     if (indexesOfWonPatternMatched.length >= 5) {
       wonList.add(_myId!);
+      saveMyPatternToDBifWon();
       return;
     }
     bool matched = true;
@@ -202,6 +248,7 @@ class GameData extends ChangeNotifier {
     }
     if (indexesOfWonPatternMatched.length >= 5) {
       wonList.add(_myId!);
+      saveMyPatternToDBifWon();
     }
     notifyListeners();
   }
@@ -247,8 +294,9 @@ class GameData extends ChangeNotifier {
         gotPattern: myPattern.isNotEmpty,
         noOfPatternMatched: indexesOfWonPatternMatched.length,
       );
-      clientSendDto..id=myId
-      ..recentlyClicked=recentlyClicked;
+      clientSendDto
+        ..id = myId
+        ..recentlyClicked = recentlyClicked;
       _client?.sendMessageToServer(clientSendDto);
     }
     notifyListeners();

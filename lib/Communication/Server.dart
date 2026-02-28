@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/DTOs/ClientData.dart';
@@ -18,6 +19,7 @@ class Server {
     gameData=GameData.instance;
     gameData.attachServer(this);
   }
+  List<int> availableId=[4,5,6,7,8,9,10,11,12,13,14,15,16,17];
   late Timer becon;
   // late Timer gameDataSendingTimer;
   late RawDatagramSocket udpSocket;
@@ -101,7 +103,11 @@ class Server {
   }
 
   List<int> generatePattern(int id) {
-    return List.empty();
+    List<int>pattern=List.generate(25, (i)=>i);
+    for(int i=0;i<id;i++){
+      pattern.shuffle(Random());
+    }
+    return pattern;
   }
 
   Future<void> start() async {
@@ -152,7 +158,8 @@ class Server {
   }
 
   Future<void> _handleNewClient(Socket clientSocket) async {
-    int id = clientSocket.hashCode;
+    int id = availableId.elementAt(Random().nextInt(availableId.length-1));
+    availableId.remove(id);
     ClientData client = ClientData.minimal(id: id);
     clients.add(client);
     ClientSendDto clientSendDto;
@@ -305,7 +312,7 @@ class Server {
   }
 
   stopCommunication() {
-    UserDatabase.instance.updatePattern(generatePattern(140));
+    gameData.savePattern();
     stopScanningDevices();
     for (ClientData client in clients) {
       client.clientSocket.destroy();

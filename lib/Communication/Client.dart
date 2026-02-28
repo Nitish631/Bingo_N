@@ -150,8 +150,8 @@ class Client {
             gameData.setId(getMyId());
             gameData.updateGameClickedPattern(serverSendDto.recentlyClicked);
             gameData.calculateWon();
-            gameData.notifyUI();
             gameData.sendDataForCommunication();
+            gameData.notifyUI();
             // NECESSARY DO THE BELOW TASK
             //CHECK THE STATE AND SEND THE DATA TO THE SERVER
           }

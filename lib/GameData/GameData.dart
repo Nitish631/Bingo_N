@@ -60,7 +60,7 @@ class GameData extends ChangeNotifier {
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
   bool isServer = false;
   int recentlyClicked = -11;
-int wonId=0;
+int wonId=205;
   static final GameData instance = GameData._init();
   GameData._init();
   UserDatabase userDatabase = UserDatabase.instance;
@@ -99,7 +99,7 @@ int wonId=0;
 
   int get myId => _myId!;
   void setId(int? id) {
-    // _myId ??= id;
+    _myId =id??0;
   }
 
   void hasWon(){

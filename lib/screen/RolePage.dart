@@ -1,16 +1,46 @@
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/screen/GameLobby.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Rolepage extends StatelessWidget {
   Rolepage({super.key});
   final gameData = GameData.instance;
-  void navigateLobby(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (builder) => GameLobby()),
+  Future<void> navigateLobbyIfconnected(BuildContext context) async {
+    if (await isConnectedToWifi()) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (builder) => GameLobby()),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(15),
+        ),
+        width: 250,
+        backgroundColor: const Color.fromARGB(136, 135, 135, 135),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_off),
+            SizedBox(width: 10),
+            Text(
+              "Connect to a network",
+              style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<bool> isConnectedToWifi() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult.contains(ConnectivityResult.wifi);
   }
 
   @override
@@ -47,7 +77,7 @@ class Rolepage extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         gameData.isServer = true;
-                        navigateLobby(context);
+                        navigateLobbyIfconnected(context);
                       },
 
                       child: Container(
@@ -72,7 +102,7 @@ class Rolepage extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         gameData.isServer = false;
-                        navigateLobby(context);
+                        navigateLobbyIfconnected(context);
                       },
                       child: Container(
                         width: 120,

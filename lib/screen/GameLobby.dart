@@ -28,7 +28,6 @@ class _GameLobbyState extends State<GameLobby> {
       print(gameData.playersWithId);
       // client.start();
       isServer=false;
-      print("CLIENTS");
     }
     super.initState();
   }

@@ -101,6 +101,14 @@ class GameData extends ChangeNotifier {
   void setId(int? id) {
     // _myId ??= id;
   }
+
+  int hasWon(){
+    if(wonList.length!=0){
+      return wonList.elementAt(0);
+    }
+    return 0;
+  }
+
   List<int> alterPattern(List<int> list) {
     List<int> order = [0, 1, 2];
     order.shuffle(Random());

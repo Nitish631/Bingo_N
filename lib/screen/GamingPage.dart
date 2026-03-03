@@ -30,8 +30,8 @@ class _GamingPageState extends State<GamingPage> {
       body: AnimatedBuilder(
         animation: GameData.instance,
         builder: (context, child) {
-          if (gameData.wonId != 0) {
-            Navigator.pushReplacement(
+          if (gameData.wonList.isNotEmpty) {
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => wonPage()),
             );

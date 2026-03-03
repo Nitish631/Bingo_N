@@ -8,27 +8,64 @@ import 'package:bingo_n/DTOs/ServerSendDto.dart';
 import 'package:bingo_n/Extensions/TcpExtension.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/GameData/MessageType.dart';
 import 'package:bingo_n/database/userInfo.dart';
+import 'package:flutter/material.dart';
 
 class Client {
   late String serverIPAddress;
   late RawDatagramSocket udpSocket;
-  late Socket tcpSocket;
+  Socket? tcpSocket;
   NetworkData net = NetworkData.instance;
   late int udpPort;
   late int tcpPort;
   late String udpTag;
-  late ClientSendDto clientSendDto;
+  ClientSendDto clientSendDto = ClientSendDto.min(
+    gotPattern: false,
+    isReady: false,
+    isWon: false,
+  );
   late UserDatabase userDatabase;
-  late StreamSubscription tcpSub;
+  StreamSubscription? tcpSub;
   late ServerSendDto serverSendDto;
   late GameData gameData;
   String? clientName;
 
-  static Client instance=Client._init();
+  static Client instance = Client._init();
   Client._init();
+  BuildContext? context;
+  Future<void> start(BuildContext context) async {
+    this.context = context;
+    try {
+      await _start();
+      gameData.attachClient(this);
+    } catch (e) {
+      gameData.connectionStatus.setStatus(
+        Status.error,
+        message: "Client crashed",
+      );
+      gameData.notifyUI();
+    }
+  }
 
-  void start() async {
+  // void snackBar(String message) {
+  //   ScaffoldMessenger.of(context!).showSnackBar(
+  //     SnackBar(
+  //       content: Text(
+  //         "$message",
+  //         style: TextStyle(fontSize: 12, color: Colors.white),
+  //       ),
+  //       width: 250,
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadiusGeometry.circular(15),
+  //       ),
+  //       duration: Duration(milliseconds: 700),
+  //       behavior: SnackBarBehavior.floating,
+  //     ),
+  //   );
+  // }
+
+  Future<void> _start() async {
     udpPort = net.udpPort;
     tcpPort = net.tcpPort;
     udpTag = net.udpTag;
@@ -40,12 +77,12 @@ class Client {
     clientSendDto.isReady = false;
     clientSendDto.isWon = false;
     clientSendDto.name = clientName!;
-    _discoverAndConnect();
+    await _discoverAndConnect();
   }
 
-  void restartConnection() {
+  void restartConnection(BuildContext context) {
     dispose();
-    start();
+    start(context);
   }
 
   void dispose() {
@@ -56,12 +93,17 @@ class Client {
     if (gameData.myPattern != []) {
       userDatabase.updatePattern(gameData.myPattern);
     }
+    gameData.connectionStatus.setStatus(
+      Status.error,
+      message: "Client crashed",
+    );
+    gameData.notifyUI();
     gameData.clear();
-    tcpSocket.close();
+    tcpSocket?.close();
     serverIPAddress = "";
     udpSocket.close();
     clientSendDto.clear();
-    tcpSub.cancel();
+    tcpSub?.cancel();
     serverSendDto.clear();
   }
 
@@ -69,7 +111,7 @@ class Client {
     Map<String, dynamic> msgJson = csd.toJson();
     String msg = jsonEncode(msgJson);
     try {
-      tcpSocket.write('$msg\n'); // tcpSocket.add(utf8.encode('$msg\n'));
+      tcpSocket!.write('$msg\n'); // tcpSocket!.add(utf8.encode('$msg\n'));
     } catch (e) {
       if (gameData.gameStarted) {
         gameData.goBackToLobby = true;
@@ -84,19 +126,19 @@ class Client {
     }
   }
 
-  int? getMyId() {
-    return serverSendDto.playersWithId.entries
-                .firstWhere(
-                  (entry) => entry.value == clientName,
-                  orElse: () => const MapEntry(-1, ''),
-                )
-                .key ==
-            -1
-        ? null
-        : serverSendDto.playersWithId.entries
-              .firstWhere((e) => e.value == clientName)
-              .key;
-  }
+  // int? getMyId() {
+  //   return serverSendDto.playersWithId.entries
+  //               .firstWhere(
+  //                 (entry) => entry.value == clientName,
+  //                 orElse: () => const MapEntry(-1, ''),
+  //               )
+  //               .key ==
+  //           -1
+  //       ? null
+  //       : serverSendDto.playersWithId.entries
+  //             .firstWhere((e) => e.value == clientName)
+  //             .key;
+  // }
 
   Future<void> _discoverAndConnect() async {
     try {
@@ -123,36 +165,54 @@ class Client {
         message: "Connecting to host",
       );
       gameData.notifyUI();
-      tcpSocket = await Socket.connect(
-        host.$1,
-        host.$2,
-        timeout: const Duration(seconds: 5),
-      );
+      try {
+        tcpSocket = await Socket.connect(
+          host.$1,
+          host.$2,
+          timeout: const Duration(seconds: 5),
+        );
+      } catch (e) {
+        gameData.connectionStatus.setStatus(
+          Status.error,
+          message: "TCP chashed",
+        );
+      }
       _send(clientSendDto);
       gameData.connectionStatus.setStatus(
         Status.connected,
         message: "Connected",
       );
       gameData.notifyUI();
-      tcpSub = tcpSocket.lines.listen(
+      tcpSub = tcpSocket!.lines.listen(
         (line) {
           Map<String, dynamic> msgJson = jsonDecode(line);
           if (msgJson.isNotEmpty) {
             serverSendDto = ServerSendDto.fromJson(msgJson);
+            // snackBar("MESSAGE GOT FROM SERVER");
             gameData.setPlayersWithId(serverSendDto.playersWithId);
             gameData.gameStarted = serverSendDto.gameStarted;
             gameData.readyPlayers = serverSendDto.readyPlayers;
             gameData.gameClickedPattern = serverSendDto.gameClickedPattern!;
             gameData.wonList = serverSendDto.wonList!;
-            gameData.turnId = serverSendDto.turnId!;
-            gameData.myPattern = serverSendDto.clientIdWithPattern!.pattern;
-            gameData.recentlyClicked=serverSendDto.recentlyClicked;
-            gameData.setId(getMyId());
+            gameData.turnId = serverSendDto.turnId ?? -1;
+            if (serverSendDto.clientIdWithPattern.id >= 0 &&
+                serverSendDto.clientIdWithPattern.pattern.isNotEmpty) {
+              gameData.myPattern = serverSendDto.clientIdWithPattern.pattern;
+              gameData.setId(serverSendDto.clientIdWithPattern.id);
+            }
+            gameData.recentlyClicked = serverSendDto.recentlyClicked;
             gameData.updateGameClickedPattern(serverSendDto.recentlyClicked);
             gameData.calculateWon();
             gameData.hasWon();
-            gameData.sendDataForCommunication();
+            if (serverSendDto.messageType == MessageType.clicked) {
+              gameData.sendDataForCommunication();
+            }
             gameData.notifyUI();
+            if(gameData.myPattern.isNotEmpty){
+              // snackBar("GOT PATTERN AND ID ${gameData.myId}");
+              // print(gameData.myPattern);
+            }
+            // snackBar("ONE CYCLE COMPLETED");
             // NECESSARY DO THE BELOW TASK
             //CHECK THE STATE AND SEND THE DATA TO THE SERVER
           }
@@ -198,7 +258,11 @@ class Client {
 
   Future<(String, int)?> _discoverHost({required Duration timeout}) async {
     final completer = Completer<(String, int)>();
-    udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, udpPort);
+    udpSocket = await RawDatagramSocket.bind(
+      InternetAddress.anyIPv4,
+      udpPort,
+      reuseAddress: true,
+    );
     udpSocket.broadcastEnabled = true;
     late Timer t;
     t = Timer(timeout, () {
@@ -224,7 +288,10 @@ class Client {
     });
     return completer.future;
   }
-  void sendMessageToServer(ClientSendDto clientSendDto){
+
+  void sendMessageToServer(ClientSendDto clientSendDto) {
+    snackBar("READY MESSAGE SENDING");
+    print("READY MESSAGE SENDING");
     _send(clientSendDto);
   }
 }

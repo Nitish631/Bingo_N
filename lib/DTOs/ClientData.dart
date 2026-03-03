@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 
 class ClientData {
   late Socket clientSocket;
   late String name;
-  late bool isReadyToPlay;
+  bool isReadyToPlay=false;
   bool hasWon =false;
-  final int id;
-  late List<int> pattern;
+  late int id;
   late bool gotPattern;
   late int noOfPatternMatched;
+  StreamSubscription? subscription;
+  List<int> pattern=[];
+
 
   ClientData({
     required this.clientSocket,
@@ -20,7 +23,7 @@ class ClientData {
     required this.pattern,
     required this.noOfPatternMatched
   });
-  ClientData.minimal({required this.id});
+  ClientData.minimal();
   void setClientSocket(Socket socket){
     clientSocket=socket;
   }

@@ -2,7 +2,7 @@ class ClientSendDto {
   int? recentlyClicked;
   bool isWon;
   int? id;
-  String name;
+  String name="";
   bool isReady;
   bool gotPattern;
   int noOfPatternMatched=0;
@@ -16,6 +16,7 @@ class ClientSendDto {
     required this.gotPattern,
     required this.noOfPatternMatched,
   });
+  ClientSendDto.min({required this.gotPattern,required this.isReady,required this.isWon});
   void clear(){
     recentlyClicked=null;
     isWon=false;

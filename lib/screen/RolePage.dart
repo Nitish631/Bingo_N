@@ -40,11 +40,13 @@ class Rolepage extends StatelessWidget {
 
   Future<bool> isConnectedToWifi() async {
     var connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult.contains(ConnectivityResult.wifi);
+    return true;
+    // return connectivityResult.contains(ConnectivityResult.mobile) || connectivityResult.contains(ConnectivityResult.wifi);
   }
 
   @override
   Widget build(BuildContext context) {
+    gameData.goBackToLobby=false;
     return Scaffold(
       body: Container(
         height: double.infinity,

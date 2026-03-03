@@ -1,4 +1,5 @@
 import 'package:bingo_n/DTOs/PatternWithId.dart';
+import 'package:bingo_n/GameData/MessageType.dart';
 
 class ServerSendDto {
   Map<int, String> playersWithId;
@@ -7,17 +8,18 @@ class ServerSendDto {
   List<int>? gameClickedPattern;
   List<int>? wonList;
   int? turnId;
-  PatternWithId? clientIdWithPattern; // client-specific pattern
+  PatternWithId clientIdWithPattern=PatternWithId(id: -1, pattern: List.empty()); // client-specific pattern
   int recentlyClicked=-11;
+  MessageType messageType=MessageType.automatic;
 
   ServerSendDto({
     required this.playersWithId,
     required this.readyPlayers,
     required this.gameStarted,
     this.gameClickedPattern,
-    this.clientIdWithPattern,
     this.wonList,
     this.turnId,
+    required this.clientIdWithPattern
   });
 
   void setPlayersWithId(Map<int, String> map) {
@@ -32,14 +34,14 @@ class ServerSendDto {
     gameClickedPattern=null;
     wonList=null;
     turnId=-1;
-    clientIdWithPattern=null;
+    clientIdWithPattern=PatternWithId(id: -1, pattern: List.empty());
   }
 
   Map<String, dynamic> toJson() {
     return {
       'playersWithId': playersWithId.map((k, v) => MapEntry(k.toString(), v)),
       'gameClickedPattern': gameClickedPattern,
-      'playerPattern': clientIdWithPattern?.toJson(), 
+      'playerPattern': clientIdWithPattern.toJson(), 
       'wonList': wonList,
       'turnId': turnId,
       'gameStarted': gameStarted,
@@ -58,7 +60,7 @@ class ServerSendDto {
           : null,
       clientIdWithPattern: json['playerPattern'] != null
           ? PatternWithId.fromJson(json['playerPattern'])
-          : null,
+          : PatternWithId(id: -1, pattern: List.empty()),
       wonList: json['wonList'] != null
           ? List<int>.from(json['wonList'])
           : null,

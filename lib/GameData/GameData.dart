@@ -8,49 +8,16 @@ import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
 
 class GameData extends ChangeNotifier {
-  late Map<int, String> playersWithId = {
-    101: "Alice",
-    205: "Bob",
-    309: "Charlie",
-    412: "David",
-    518: "Emma",
-  };
+  Map<int, String> playersWithId={};
   bool gameStarted = false; //
-  List<int> readyPlayers = [518, 412]; //
+  List<int> readyPlayers = []; //
   List<int> gameClickedPattern = [];
   List<int> wonList = [];
-  late int turnId = 205; //
-  List<int> myPattern = [
-    23,
-    16,
-    7,
-    11,
-    20,
-    10,
-    5,
-    12,
-    4,
-    17,
-    19,
-    15,
-    1,
-    21,
-    22,
-    6,
-    2,
-    14,
-    3,
-    24,
-    13,
-    25,
-    8,
-    9,
-    18,
-  ];
+  int turnId=-1 ; //
+  late List<int> myPattern;
   List<int> indexClickedPattern = [];
-  int _myId = 205; //
-  // late String name;//
-  String name = "Bob";
+  late int _myId ; //
+   String? name;//
   bool showReconnectButton = false;
   bool goBackToLobby = false;
   List<int> indexesOfWonPatternMatched = [];
@@ -60,6 +27,7 @@ class GameData extends ChangeNotifier {
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
   bool isServer = false;
   int recentlyClicked = -11;
+  int serverId=-22;
 int wonId=205;
   static final GameData instance = GameData._init();
   GameData._init();
@@ -164,7 +132,6 @@ int wonId=205;
     myPattern = [];
     _myId = -1; //
     showReconnectButton = false;
-    goBackToLobby = false;
     indexClickedPattern = [];
     connectionStatus.reset();
     recentlyClicked = -11;
@@ -178,7 +145,7 @@ int wonId=205;
 
   void notifyReadyToServer(bool ready) {
     ClientSendDto clientSendDto = ClientSendDto(
-      name: name,
+      name: name??"",
       isWon: false,
       isReady: ready,
       id: myId,
@@ -223,7 +190,7 @@ int wonId=205;
     if (!gameStarted) return;
     if (wonList.contains(_myId)) return;
     if (indexesOfWonPatternMatched.length >= 5) {
-      wonList.add(_myId!);
+      wonList.add(_myId);
       saveMyPatternToDBifWon();
       return;
     }
@@ -255,7 +222,7 @@ int wonId=205;
       }
     }
     if (indexesOfWonPatternMatched.length >= 5) {
-      wonList.add(_myId!);
+      wonList.add(_myId);
       saveMyPatternToDBifWon();
     }
     notifyListeners();
@@ -296,7 +263,7 @@ int wonId=205;
       _server!.sendGameDataToAllTheClients();
     } else {
       ClientSendDto clientSendDto = ClientSendDto(
-        name: name,
+        name: name??"",
         isWon: wonList.contains(myId),
         isReady: readyPlayers.contains(myId),
         gotPattern: myPattern.isNotEmpty,

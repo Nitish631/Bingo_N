@@ -1,5 +1,6 @@
 import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/Communication/Server.dart';
+import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:flutter/material.dart';
@@ -14,21 +15,32 @@ class GameLobby extends StatefulWidget {
 
 class _GameLobbyState extends State<GameLobby> {
   GameData gameData = GameData.instance;
-  bool ready=false;
+  bool ready = false;
   late bool isServer;
+  Server server = Server.instance;
+  Client client = Client.instance;
   @override
   void initState() {
     // TODO: implement initState
-    if (gameData.isServer) {
-      Server server = Server.instance;
-      server.start();
-      isServer=true;
-    } else {
-      Client client = Client.instance;
-      // client.start();
-      isServer=false;
-    }
     super.initState();
+    if (gameData.isServer) {
+      server.start(context);
+      isServer = true;
+    } else {
+      client.start(context);
+      isServer = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (isServer) {
+      server.dispose();
+    } else {
+      client.dispose();
+    }
+    // TODO: implement dispose
+    super.dispose();
   }
 
   @override
@@ -44,10 +56,20 @@ class _GameLobbyState extends State<GameLobby> {
                 .entries
                 .toList();
             if (gameData.gameStarted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: ((context) => GamingPage())),
-              );
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: ((context) => GamingPage())),
+                );
+              });
+            }
+            if (gameData.goBackToLobby) {
+              gameData.clear();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                Navigator.pop(context);
+              });
             }
             return Column(
               children: [
@@ -75,6 +97,7 @@ class _GameLobbyState extends State<GameLobby> {
                             int id = entry.key;
                             String name = entry.value;
                             return Container(
+                              padding: EdgeInsets.symmetric(horizontal: 5),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 color: gameData.isReadyPlayer(id)
@@ -99,34 +122,35 @@ class _GameLobbyState extends State<GameLobby> {
                                       ),
                                     ),
                                   ),
-                                  isServer?
-                                  Positioned(
-                                    top: 3,
-                                    right: 3,
-                                    child: InkWell(
-                                      onTap: () {
-                                        gameData.removeClient(id);
-                                      },
-                                      child: Container(
-                                        height: 20,
-                                        width: 20,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            width: 1,
-                                            color: Colors.white,
+                                  isServer && id != gameData.serverId
+                                      ? Positioned(
+                                          top: 3,
+                                          right: 3,
+                                          child: InkWell(
+                                            onTap: () {
+                                              gameData.removeClient(id);
+                                            },
+                                            child: Container(
+                                              height: 20,
+                                              width: 20,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  width: 1,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.close,
+                                                  color: Colors.white,
+                                                  size: 10,
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.close,
-                                            color: Colors.white,
-                                            size: 10,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ):SizedBox(),
+                                        )
+                                      : SizedBox(),
                                 ],
                               ),
                             );
@@ -138,72 +162,150 @@ class _GameLobbyState extends State<GameLobby> {
                 ),
                 Expanded(
                   flex: 2,
-                  child: Container(
-                    child: Center(
-                      child: Container(
-                        height: 70,
-                        width: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Color.fromRGBO(223, 72, 2, 1),
-                        ),
-                        child: InkWell(
-                          onTap: () {
-                            if (isServer) {
-                              int count = gameData
-                                  .returnNOnReadyPlayersCountWhileStarting();
-                              if (count != 0) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: const Color.fromARGB(
-                                      133,
-                                      120,
-                                      120,
-                                      120,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadiusGeometry.circular(15),
-                                    ),
-                                    content: Text(
-                                      "Not all players are ready.",
+                  child: Column(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Container(
+                          child: Center(
+                            child: Container(
+                              height: 70,
+                              width: 150,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Color.fromRGBO(223, 72, 2, 1),
+                              ),
+                              child: InkWell(
+                                onTap: () {
+                                  if (!(gameData.connectionStatus.status ==
+                                      Status.connected)) {
+                                    if (isServer) {
+                                      server.restart(context);
+                                    } else {
+                                      client.restartConnection(context);
+                                    }
+                                    return;
+                                  }
+                                  if (gameData.playersWithId.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: const Color.fromARGB(
+                                          133,
+                                          120,
+                                          120,
+                                          120,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadiusGeometry.circular(15),
+                                        ),
+                                        content: Text(
+                                          "No players",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        width: 130,
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (isServer) {
+                                    int count = gameData
+                                        .returnNOnReadyPlayersCountWhileStarting();
+                                    if (count != 0) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: const Color.fromARGB(
+                                            133,
+                                            120,
+                                            120,
+                                            120,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadiusGeometry.circular(
+                                                  15,
+                                                ),
+                                          ),
+                                          content: Text(
+                                            "Not all players are ready.",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          width: 150,
+                                          duration: Duration(seconds: 1),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    gameData.gameStarted = true;
+                                    gameData.sendDataForCommunication();
+                                  } else {
+                                    ready = gameData.readyPlayers.contains(
+                                      gameData.myId,
+                                    );
+                                    gameData.notifyReadyToServer(!ready);
+                                    ready = !ready;
+                                  }
+                                },
+                                child: Container(
+                                  height: double.infinity,
+                                  width: double.infinity,
+                                  child: Center(
+                                    child: Text(
+                                      !(gameData.connectionStatus.status ==
+                                              Status.connected)
+                                          ? "Reconnect"
+                                          : isServer
+                                          ? "Start"
+                                          : ready
+                                          ? "Not Ready"
+                                          : "Ready",
                                       style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color.fromARGB(
+                                          255,
+                                          0,
+                                          255,
+                                          255,
+                                        ),
                                       ),
                                     ),
-                                    behavior: SnackBarBehavior.floating,
-                                    width: 150,
-                                    duration: Duration(seconds: 1),
                                   ),
-                                );
-                                return;
-                              }
-                              gameData.sendDataForCommunication();
-                            }else{
-                              ready=gameData.readyPlayers.contains(gameData.myId);
-                              gameData.notifyReadyToServer(!ready);
-                              ready=!ready;
-                            }
-                          },
-                          child: Container(
-                            height: double.infinity,
-                            width: double.infinity,
-                            child: Center(
-                              child: Text(
-                                isServer?
-                                "Start":ready? "Not Ready":"Ready",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color.fromARGB(255, 0, 255, 255),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          child: Center(
+                            child: Container(
+                              child: Text(
+                                "${gameData.connectionStatus.message}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

@@ -71,8 +71,8 @@ int wonId=205;
   }
 
   void hasWon(){
-    if(wonList.length!=0){
-      wonId= wonList.elementAt(0);
+    if(wonList.isNotEmpty){
+      wonId= wonList.first;
       notifyListeners();
     }
   }
@@ -229,15 +229,12 @@ int wonId=205;
   }
 
   String getCharIfPatternMatched(int patternIndex) {
-    calculateWon();
     if (indexesOfWonPatternMatched.contains(patternIndex)) {
       String? char = matchingCharacter[patternIndex];
       if (char != null) {
-        notifyListeners();
         return char;
       }
     }
-    notifyListeners();
     return "";
   }
 

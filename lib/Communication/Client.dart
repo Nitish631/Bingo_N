@@ -290,8 +290,8 @@ class Client {
   }
 
   void sendMessageToServer(ClientSendDto clientSendDto) {
-    snackBar("READY MESSAGE SENDING");
-    print("READY MESSAGE SENDING");
+    // snackBar("READY MESSAGE SENDING");
+    // print("READY MESSAGE SENDING");
     _send(clientSendDto);
   }
 }

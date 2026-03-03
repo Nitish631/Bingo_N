@@ -53,19 +53,8 @@ class _NameInputPageState extends State<NameInputPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Scaffold(
+    return  Scaffold(
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromRGBO(255, 0, 160, 1),
-                Color.fromRGBO(170, 0, 255, 1),
-              ],
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-            ),
-          ),
           height: double.infinity,
           width: double.infinity,
           child: Center(
@@ -87,11 +76,15 @@ class _NameInputPageState extends State<NameInputPage> {
                     ),
                     child: Center(
                       child: TextField(
+                        textInputAction: TextInputAction.done,
                         onTap: () {
                           setState(() {
                             labelStyleColor=Colors.brown;
                             labelText = "Player Name:";
                           });
+                        },
+                        onSubmitted: (value) {
+                          _saveName();
                         },
                         controller: nameFieldController,
                         focusNode: nameFocus,
@@ -141,7 +134,6 @@ class _NameInputPageState extends State<NameInputPage> {
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -12,29 +12,39 @@ class GamingPage extends StatefulWidget {
 
 class _GamingPageState extends State<GamingPage> {
   GameData gameData = GameData.instance;
-  late List playersIdlist;
   Color unClickedContainerColor = const Color.fromARGB(255, 0, 213, 255);
   Color ClickedContainerColor = const Color.fromARGB(170, 0, 213, 255);
   @override
   void initState() {
     // TODO: implement initState
-    playersIdlist = gameData.playersWithId.entries.toList();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    List     playersIdlist = gameData.playersWithId.entries.toList();
     double width = MediaQuery.of(context).size.width * 0.9;
     double height = width * 6 / 7;
     return Scaffold(
       body: AnimatedBuilder(
         animation: GameData.instance,
         builder: (context, child) {
+          if (!gameData.gameStarted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              Navigator.pop(context);
+            });
+          }
           if (gameData.wonList.isNotEmpty) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => wonPage()),
-            );
+            gameData.gameStarted = false;
+            gameData.sendDataForCommunication();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => wonPage()),
+              );
+            });
           }
           return Container(
             height: double.infinity,
@@ -117,79 +127,96 @@ class _GamingPageState extends State<GamingPage> {
                                       }),
                                     ),
                                   ),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: width * 5 / 7,
-                                        height: width * 5 / 7,
-                                        child: GridView.builder(
-                                          itemCount: 25,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          gridDelegate:
-                                              SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: 5,
-                                                crossAxisSpacing: 0.1,
-                                                mainAxisSpacing: 0.1,
-                                                childAspectRatio: 1,
-                                              ),
-                                          itemBuilder: (context, index) {
-                                            int element;
-                                            try {
-                                              element = int.parse(
-                                                gameData
-                                                    .getElementOfIndexOfMyPattern(
-                                                      index,
-                                                    ),
-                                              );
-                                            } catch (e) {
-                                              element = -1;
-                                            }
-                                            bool clicked = gameData.isClicked(
-                                              element,
-                                            );
-                                            return InkWell(
-                                              onTap: () {
-                                                if (gameData.isMyTurn()) {
-                                                  gameData
-                                                    ..updateGameClickedPattern(
-                                                      element,
-                                                    )
-                                                    ..recentlyClicked = element;
-                                                }
-                                                gameData.calculateWon();
-                                                gameData
-                                                    .sendDataForCommunication();
-                                                gameData.hasWon();
-                                                if (gameData.wonId != 0) {
-                                                  Navigator.pushReplacement(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          wonPage(),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              child: Container(
-                                                color: clicked
-                                                    ? ClickedContainerColor
-                                                    : unClickedContainerColor,
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  gameData
-                                                      .getElementOfIndexOfMyPattern(
-                                                        index,
+                                  Expanded(
+                                    child: Container(
+                                      height: double.infinity,
+                                      width: double.infinity,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Positioned(
+                                            top: 0,
+                                            left: 0,
+                                            child: Container(
+                                              width: width * 5 / 7,
+                                              height: width * 5 / 7,
+                                              child: Center(
+                                                child: GridView.builder(
+                                                  padding: EdgeInsets.zero,
+                                                  itemCount: 25,
+                                                  physics:
+                                                      const NeverScrollableScrollPhysics(),
+                                                  gridDelegate:
+                                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount: 5,
+                                                        crossAxisSpacing: 1,
+                                                        mainAxisSpacing: 1,
+                                                        childAspectRatio: 1,
                                                       ),
+                                                  itemBuilder: (context, index) {
+                                                    int element;
+                                                    try {
+                                                      element = int.parse(
+                                                        gameData
+                                                            .getElementOfIndexOfMyPattern(
+                                                              index,
+                                                            ),
+                                                      );
+                                                    } catch (e) {
+                                                      element = -1;
+                                                    }
+                                                    bool clicked = gameData
+                                                        .isClicked(element);
+                                                    return InkWell(
+                                                      onTap: () {
+                                                        if (!gameData
+                                                            .isMyTurn())
+                                                          return;
+                                                        gameData
+                                                          ..updateGameClickedPattern(
+                                                            element,
+                                                          )
+                                                          ..recentlyClicked =
+                                                              element;
+                                                        gameData.calculateWon();
+                                                        gameData.hasWon();
+                                                        gameData.notifyUI();
+                                                        gameData
+                                                            .sendDataForCommunication();
+                                                        if (gameData.wonId !=
+                                                            0) {
+                                                          Navigator.pushReplacement(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder:
+                                                                  (context) =>
+                                                                      wonPage(),
+                                                            ),
+                                                          );
+                                                        }
+                                                      },
+                                                      child: Container(
+                                                        color: clicked
+                                                            ? ClickedContainerColor
+                                                            : unClickedContainerColor,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Text(
+                                                          gameData
+                                                              .getElementOfIndexOfMyPattern(
+                                                                index,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),

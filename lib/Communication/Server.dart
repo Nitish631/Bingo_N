@@ -65,7 +65,7 @@ class Server {
   }
 
   List<int> getWonList() {
-    List<int> list = [];
+    List<int> list = List.empty();
     for (ClientData client in clients) {
       if (client.hasWon) {
         list.add(client.id);
@@ -150,7 +150,7 @@ class Server {
   }
 
   List<int> generatePattern(int id) {
-    List<int> pattern = List.generate(25, (i) => i);
+    List<int> pattern = List.generate(25, (i) => i+1);
     for (int i = 0; i < id; i++) {
       pattern.shuffle(Random());
     }
@@ -299,6 +299,7 @@ class Server {
         client.hasWon = clientSendDto.isWon;
         if (client.hasWon) {
           gameData.addWonPlayer(client.id);
+          gameData.wonList=getWonList();
           getTurnIdONTurnRemove(client.id);
         }
         client.isReadyToPlay = clientSendDto.isReady;
@@ -376,6 +377,7 @@ class Server {
       );
       serverSendDto.messageType=MessageType.automatic;
       serverSendDto.turnId = gameData.turnId;
+      serverSendDto.wonList=List.empty();
       List<ClientData> clientsCopy = clients.toList();
       List<int> pattern;
       for (int i = 0; i < clientsCopy.length; i++) {
@@ -448,15 +450,17 @@ class Server {
   }
 
   void sendGameDataToAllTheClients() {
+    gameData.turnId=getNextTurn();
     ServerSendDto serverSendDto = ServerSendDto(
       playersWithId: gameData.playersWithId,
       readyPlayers: gameData.readyPlayers,
       gameStarted: gameData.gameStarted,
       gameClickedPattern: gameData.gameClickedPattern,
-      wonList: gameData.wonList,
+      wonList: getWonList(),
       turnId: gameData.turnId,
       clientIdWithPattern: PatternWithId(id: -0, pattern: List.empty()),
     );
+    gameData.notifyUI();
   serverSendDto.messageType=MessageType.clicked;
     Map<String, dynamic> messageJson = serverSendDto.toJson();
     sendMessage(messageJson);

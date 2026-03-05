@@ -1,64 +1,65 @@
 import 'package:bingo_n/Communication/Client.dart';
-import 'package:bingo_n/Communication/Server.dart';
-import 'package:bingo_n/GameData/ConnectionStatus.dart';
-import 'package:bingo_n/screen/GamingPage.dart';
 import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/screen/GamingPage.dart';
+import 'package:bingo_n/Communication/Server.dart';
+import 'package:bingo_n/DTOs/navData.dart';
+import 'package:bingo_n/GameData/ConnectionStatus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GameLobby extends StatefulWidget {
-  const GameLobby({super.key, required this.isServer});
-  final bool isServer;
+  final Gamedata gameData;
+  final communication;
+  const GameLobby({
+    super.key,
+    required this.communication,
+    required this.gameData,
+  });
 
   @override
   State<GameLobby> createState() => _GameLobbyState();
 }
 
 class _GameLobbyState extends State<GameLobby> {
-  GameData gameData = GameData.instance;
-  bool ready = false;
-  late bool isServer;
-  Server server = Server.instance;
-  Client client = Client.instance;
+  late Gamedata gameData;
+  bool isServer = false;
   @override
   void initState() {
-    // TODO: implement initState
-    isServer = widget.isServer;
-    gameData.goBackToLobby=false;
+    isServer = widget.communication is Server;
+    gameData = widget.gameData;
+    gameData.currentPage = Navdata.lobby;
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_){
-      if(!mounted)return;
-      if (isServer) {
-      server.mofidyContext(context);
-    } else {
-      client.mofidyContext(context);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.communication.mofidyContext(context);
     });
-    
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         margin: EdgeInsets.all(10),
         child: AnimatedBuilder(
-          animation: GameData.instance,
+          animation: gameData,
           builder: (context, _) {
             List<MapEntry<int, String>> playerEntries = gameData
                 .playersWithId
                 .entries
                 .toList();
-            if (gameData.gameStarted) {
+            if (gameData.currentPage == Navdata.gamingPage) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: ((context) => GamingPage())),
+                  MaterialPageRoute(
+                    builder: ((context) =>
+                        GamingPage(communication: widget.communication)),
+                  ),
                 );
               });
             }
-            if (gameData.goBackToLobby) {
+            if (gameData.currentPage == Navdata.lobby) {
               gameData.clear();
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
@@ -94,7 +95,7 @@ class _GameLobbyState extends State<GameLobby> {
                               padding: EdgeInsets.symmetric(horizontal: 5),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: gameData.isReadyPlayer(id)
+                                color: gameData.isPlayerReady(id)
                                     ? const Color.fromARGB(255, 59, 221, 0)
                                     : const Color.fromARGB(255, 143, 24, 0),
                               ),
@@ -122,7 +123,8 @@ class _GameLobbyState extends State<GameLobby> {
                                           right: 3,
                                           child: InkWell(
                                             onTap: () {
-                                              gameData.removeClient(id);
+                                              (widget.communication as Server)
+                                                  .removeClient(id);
                                             },
                                             child: Container(
                                               height: 20,
@@ -173,11 +175,7 @@ class _GameLobbyState extends State<GameLobby> {
                                 onTap: () {
                                   if (!(gameData.connectionStatus.status ==
                                       Status.connected)) {
-                                    if (isServer) {
-                                      server.restart(context);
-                                    } else {
-                                      client.restartConnection(context);
-                                    }
+                                    widget.communication.start(context);
                                     return;
                                   }
                                   if (gameData.playersWithId.isEmpty) {
@@ -207,9 +205,8 @@ class _GameLobbyState extends State<GameLobby> {
                                     );
                                     return;
                                   }
-                                  if (isServer) {
-                                    int count = gameData
-                                        .returnNOnReadyPlayersCountWhileStarting();
+                                  if (widget.communication is Server) {
+                                    int count = gameData.noOfNotReadyPlayers();
                                     if (count != 0) {
                                       ScaffoldMessenger.of(
                                         context,
@@ -228,7 +225,7 @@ class _GameLobbyState extends State<GameLobby> {
                                                 ),
                                           ),
                                           content: Text(
-                                            "Not all players are ready.",
+                                            "$count ${count == 1 ? "player is not" : "players are not"} ready.",
                                             style: GoogleFonts.poppins(
                                               fontSize: 16,
                                               color: Colors.white,
@@ -241,14 +238,12 @@ class _GameLobbyState extends State<GameLobby> {
                                       );
                                       return;
                                     }
-                                    gameData.gameStarted = true;
-                                    gameData.sendDataForCommunication();
+
+                                    (widget.communication as Server).sendNavigateToGamingPage();
                                   } else {
-                                    ready = gameData.readyPlayers.contains(
-                                      gameData.myId,
-                                    );
-                                    gameData.notifyReadyToServer(!ready);
-                                    ready = !ready;
+                                    bool ready = gameData.isReady();
+                                    (widget.communication as Client)
+                                        .notifyReadyToAll(!ready);
                                   }
                                 },
                                 child: Container(
@@ -261,7 +256,7 @@ class _GameLobbyState extends State<GameLobby> {
                                           ? "Reconnect"
                                           : isServer
                                           ? "Start"
-                                          : ready
+                                          : gameData.isReady()
                                           ? "Not Ready"
                                           : "Ready",
                                       style: GoogleFonts.poppins(

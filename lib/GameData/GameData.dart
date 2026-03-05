@@ -1,48 +1,29 @@
-import 'dart:math';
-
-import 'package:bingo_n/Communication/Client.dart';
-import 'package:bingo_n/Communication/Server.dart';
-import 'package:bingo_n/DTOs/ClientSendDto.dart';
+import 'package:bingo_n/DTOs/PatternWithId.dart';
+import 'package:bingo_n/DTOs/navData.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
-import 'package:bingo_n/GameData/MessageType.dart';
-import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
 
-class GameData extends ChangeNotifier {
+class Gamedata extends ChangeNotifier {
+  Gamedata._privateConstructor();
+  static final Gamedata instance = Gamedata._privateConstructor();
+  Navdata currentPage = Navdata.rolePage;
+  bool isServer=false;
+  int wonId=-4;
+  int myId=-3;
+  int turnId=-1;
+  int recentlyClicked=-11;
+  int serverId=-22;
+  String? name;
+  List<int>myPattern=[];
+  int count=0;
+  Map<int,String>matchingCharacter={};
+  List<int> indexesOfWonPatternMatched=[];
+  ConnectionStatus connectionStatus = ConnectionStatus.instance;  
   Map<int, String> playersWithId = {};
-  bool gameStarted = false; //
-  List<int> readyPlayers = []; //
   List<int> gameClickedPattern = [];
-  List<int> wonList = [];
-  int turnId = -1; //
-  List<int> myPattern=[];
-  List<int> indexClickedPattern = [];
-  late int _myId; //
-  String? name; //
-  bool showReconnectButton = false;
-  bool goBackToLobby = false;
-  bool goToWinPage = false;
-  List<int> indexesOfWonPatternMatched = [];
-  Map<int, String> matchingCharacter = {};
+  List<int> readyPlayers = [];
   List<String> matchingString = ['B', 'I', 'N', 'G', 'O'];
-  int count = 0;
-  late ConnectionStatus connectionStatus = ConnectionStatus.instance;
-  bool isServer = false;
-  int recentlyClicked = -11;
-  int serverId = -22;
-  int wonId = 205;
-  static final GameData instance = GameData._init();
-  GameData._init();
-  UserDatabase userDatabase = UserDatabase.instance;
-  bool storedPattern = false;
-  var communication;
-  void attachServer(Server server) {
-    communication = server;
-  }
-
-  void attachClient(Client client) {
-    communication = client;
-  }
+  bool showReconnectButton=false;
 
   final List<List<int>> winningList = [
     [0, 1, 2, 3, 4], //0
@@ -58,140 +39,58 @@ class GameData extends ChangeNotifier {
     [0, 6, 12, 18, 24], //10
     [4, 8, 12, 16, 20], //11
   ];
-  void setPlayersWithId(Map<int, String> map) {
-    playersWithId
-      ..clear()
-      ..addAll(map);
+  void setMyPattern(PatternWithId patternWithId){
+    if(patternWithId.id>0){
+      myPattern=patternWithId.pattern;
+      myId=patternWithId.id;
+    }
   }
-
-  int get myId => _myId;
-  void setId(int? id) {
-    _myId = id ?? 0;
-  }
-
-  List<int> alterPattern(List<int> list) {
-    List<int> order = [0, 1, 2];
-    order.shuffle(Random());
-    List<int> pattern = List.empty();
-    order.forEach((i) {
-      switch (i) {
-        case 0:
-          for (int i = 15; i >= 8; i--) {
-            pattern.add(list.elementAt(i));
-          }
-          break;
-        case 1:
-          for (int i = 16; i < 25; i++) {
-            pattern.add(list.elementAt(i));
-          }
-          break;
-        case 2:
-          for (int i = 7; i >= 0; i--) {
-            pattern.add(list.elementAt(i));
-          }
-          break;
+    String getCharIfPatternMatched(int patternIndex) {
+    if (indexesOfWonPatternMatched.contains(patternIndex)) {
+      String? char = matchingCharacter[patternIndex];
+      if (char != null) {
+        return char;
       }
-    });
-    return pattern;
-  }
-
-  Future<void> saveMyPatternToDBifWon() async {
-    if (wonList.length != 0) {
-      await savePattern();
     }
+    return "";
   }
-
-  Future<void> savePattern() async {
-    if (!storedPattern) {
-      await userDatabase.updatePattern(alterPattern(myPattern));
-      storedPattern = true;
-    }
+  bool isClicked(int num){
+    return gameClickedPattern.contains(num);
   }
-
-  void setName(String? Name) {
-    if (!(Name == null)) {
-      name = Name;
-    }
+  bool isMyTurn(){
+    return turnId==myId;
   }
-  void mofidyContext(BuildContext context){
-    if(communication is Server){
-      communication.mofidyContext(context);
-    }else if(communication is Client){
-      communication.mofidyContext(context);
-    }
-  }
-
-  void clear() {
-    playersWithId={};
-    gameStarted = false;
-    readyPlayers.clear();
+   bool isReady()=>readyPlayers.contains(myId);
+  void clear(){
+    playersWithId.clear();
+    wonId=-4;
+    myId=-3;
+    turnId=-1;
     gameClickedPattern.clear();
-    wonList.clear();
-    turnId = -1;
+    readyPlayers.clear();
+    recentlyClicked=-11;
+    serverId=-22;
     myPattern.clear();
-    _myId = -1; //
-    showReconnectButton = false;
-    indexClickedPattern.clear();
-    connectionStatus.reset();
-    recentlyClicked = -11;
-    storedPattern = false;
-    goBackToLobby = false;
-    goToWinPage = false;
-    connectionStatus.setStatus(Status.disconnected, message: "No connection");
-    notifyListeners();
+    isServer=false;
   }
-
-  void notifyUI() {
-    notifyListeners();
+  void updateClickedPattern(int clicked){
+    if(clicked<0)return;
+    if(gameClickedPattern.contains(clicked))return;
+    recentlyClicked=clicked;
+    gameClickedPattern.add(clicked);
   }
-
-  void notifyReadyToServer(bool ready) {
-    ClientSendDto clientSendDto = ClientSendDto(
-      name: name ?? "",
-      isWon: false,
-      isReady: ready,
-      id: myId,
-      gotPattern: myPattern.isNotEmpty,
-      noOfPatternMatched: 0,
-      recentlyClicked: recentlyClicked,
-      messageType: MessageType.clicked
-    );
-    communication.sendMessageToServer(clientSendDto);
-    if (ready) {
-      readyPlayers.add(_myId);
-    } else {
-      readyPlayers.remove(_myId);
-    }
+  bool isPlayerReady(int id){
+    return readyPlayers.contains(id);
   }
-
-  void updateGameClickedPattern(int clicked) {
-    if (clicked < 0) return;
-    if (!gameClickedPattern.contains(clicked)) {
-      recentlyClicked = clicked;
-      gameClickedPattern.add(clicked);
-    }
-    calculateWon();
-    print("SENDING DATA");
-    sendDataForCommunication();
+  bool isTurnOf(int id){
+    return turnId==id;
   }
-
-  void addWonPlayer(id) {
-    if (!wonList.contains(id)) {
-      wonList.add(id);
-    }
-  }
-
-  void calculateWon() {
-    //CALCULATE IF YOU WON
-    if (!gameStarted) return;
-    if (wonList.isNotEmpty) {
-      wonId = wonList.first;
-      goToWinPage = true;
-      return;
-    }
+  void calculateWon(){
+//CALCULATE IF YOU WON
+    if (currentPage!=Navdata.gamingPage) return;
+    if (wonId>0) return;
     if (indexesOfWonPatternMatched.length >= 5) {
-      wonList.add(_myId);
-      saveMyPatternToDBifWon();
+      wonId = myId;
       return;
     }
     bool matched = true;
@@ -222,29 +121,10 @@ class GameData extends ChangeNotifier {
       }
     }
     if (indexesOfWonPatternMatched.length >= 5) {
-      wonList.add(_myId);
-      wonId = wonList.first;
-      goToWinPage = true;
-      saveMyPatternToDBifWon();
+      wonId = myId;
     }
   }
-
-  String getCharIfPatternMatched(int patternIndex) {
-    if (indexesOfWonPatternMatched.contains(patternIndex)) {
-      String? char = matchingCharacter[patternIndex];
-      if (char != null) {
-        return char;
-      }
-    }
-    return "";
-  }
-
-  bool isClicked(int n) {
-    if (n < 0) return false;
-    return gameClickedPattern.contains(n);
-  }
-
-  String getElementOfIndexOfMyPattern(int index) {
+    String getElementOfIndexOfMyPattern(int index) {
     try {
       return myPattern.elementAt(index).toString();
     } catch (e) {
@@ -252,58 +132,20 @@ class GameData extends ChangeNotifier {
     }
   }
 
-  bool isMyTurn() {
-    return turnId == myId;
-  }
-
-  void sendDataForCommunication() {
-    if (communication is Server) {
-      print("SENDING BY SERVER");
-      communication.sendGameDataToAllTheClients();
-    } else {
-      ClientSendDto clientSendDto = ClientSendDto(
-        recentlyClicked: recentlyClicked,
-        name: name ?? "",
-        isWon: wonList.contains(myId),
-        isReady: readyPlayers.contains(myId),
-        gotPattern: myPattern.isNotEmpty,
-        noOfPatternMatched: indexesOfWonPatternMatched.length,
-        messageType: MessageType.clicked
-      );
-      clientSendDto
-        ..id = myId
-        ..recentlyClicked = recentlyClicked;
-        print("SENDING BY CLIENT");
-      communication.sendMessageToServer(clientSendDto);
-    }
-  }
-
-  void removeClient(int id) {
-    if (!(communication is Server)) return;
-    communication.removeClient(id);
-    playersWithId.remove(id);
-    communication.sendGameDataToAllTheClients();
-  }
-
-  int returnNOnReadyPlayersCountWhileStarting() {
-    if (!isServer) return 0;
+  int noOfNotReadyPlayers(){
     int count = 0;
     playersWithId.forEach((key, value) {
       if (!readyPlayers.contains(key)) {
         count++;
       }
     });
-    if (count == 0) {
-      gameStarted = true;
-    }
     return count;
   }
-
-  bool isTurnOfId(int id) {
-    return turnId == id;
+  bool isWon(){
+    return wonId==myId;
   }
 
-  bool isReadyPlayer(int id) {
-    return readyPlayers.contains(id);
+  void notifyUI(){
+    notifyListeners();
   }
 }

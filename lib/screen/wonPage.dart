@@ -14,17 +14,13 @@ class wonPage extends StatefulWidget {
 }
 
 class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
-  GameData gameData = GameData.instance;
+  Gamedata gameData=Gamedata.instance;
   late AnimationController animationController;
   late Animation<double> animation;
   late Animation<double> colorValue;
   late Animation<double> waveAnimation;
   @override
   void initState() {
-    // TODO: implement initState
-    gameData.gameStarted = false;
-    gameData.goToWinPage=false;
-    gameData.sendDataForCommunication();
     super.initState();
     animationController = AnimationController(
       vsync: this,

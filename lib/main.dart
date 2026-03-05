@@ -9,8 +9,8 @@ void main(List<String> args) async{
 Future<void> assignName()async{
     UserDatabase userDatabase=UserDatabase.instance;
   userDatabase.database;
-  GameData gameData=GameData.instance;
-  gameData.setName(await userDatabase.getUserName());
+Gamedata gameData=Gamedata.instance;
+  gameData.name=await userDatabase.getUserName();
 }
 class Game extends StatefulWidget {
   const Game({super.key});

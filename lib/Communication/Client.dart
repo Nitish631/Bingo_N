@@ -5,9 +5,10 @@ import 'dart:io';
 import 'package:bingo_n/Communication/NetworkData.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/DTOs/ServerSendDto.dart';
+import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/DTOs/navData.dart';
 import 'package:bingo_n/Extensions/TcpExtension.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
-import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/GameData/MessageType.dart';
 import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
@@ -28,261 +29,58 @@ class Client {
   late UserDatabase userDatabase;
   StreamSubscription? tcpSub;
   late ServerSendDto serverSendDto;
-  GameData gameData=GameData.instance;
+  late Gamedata gameData;
   String? clientName;
-  bool _isSocketOpen = false;
-
-  static Client instance = Client._init();
-  Client._init();
+  // bool _isSocketOpen = false;
+  Client._privateConstructor();
+  static final Client instance = Client._privateConstructor();
   BuildContext? context;
-  Future<void> start(BuildContext context) async {
-    this.context = context;
-    // snackBar("CLIENT STARTED");
+  void start(BuildContext context) {
     try {
-      gameData.attachClient(instance);
-      await _start();
+      dispose();
+      this.context = context;
+      gameData = Gamedata.instance;
+      gameData.isServer = false;
+      _start();
     } catch (e) {
-      // snackBar("CLIENT CRASHED");
-      gameData.connectionStatus.setStatus(
-        Status.error,
-        message: "Client crashed",
-      );
-      gameData.notifyUI();
+      print("ERROR IN CLIENT . CRASHED : $e");
     }
   }
 
-  void snackBar(String message) {
-    if (context == null) return;
-    ScaffoldMessenger.of(context!).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$message",
-          style: TextStyle(fontSize: 12, color: Colors.white),
-        ),
-        width: 250,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusGeometry.circular(15),
-        ),
-        duration: Duration(milliseconds: 700),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void updateGameClickedPattern(int num) {
+    if (num > 0) {
+      if (gameData.turnId == gameData.myId) {
+        ClientSendDto clientSendDto = ClientSendDto(
+          name: gameData.name ?? "",
+          isWon: gameData.isWon(),
+          isReady: gameData.isReady(),
+          id: gameData.myId,
+          gotPattern: gameData.myPattern.isNotEmpty,
+          noOfPatternMatched: gameData.indexesOfWonPatternMatched.length,
+          messageType: MessageType.automatic,
+          recentlyClicked: num
+        );
+        sendMessageToServer(clientSendDto);
+      }
+    }
   }
 
-  Future<void> _start() async {
-    udpPort = net.udpPort;
-    tcpPort = net.tcpPort;
-    udpTag = net.udpTag;
-    userDatabase = UserDatabase.instance;
-    clientName = await userDatabase.getUserName();
-    clientSendDto.gotPattern = false;
-    clientSendDto.isReady = false;
-    clientSendDto.isWon = false;
-    clientSendDto.name = clientName!;
-    await _discoverAndConnect();
-  }
-
-  void restartConnection(BuildContext context) {
-    dispose();
-    start(context);
-  }
-
-  void dispose() {
-    try {
-      _handleTheDisconnectionWithServer();
-      gameData.gameStarted=false;
-    } catch (_) {}
-  }
-
-  void _handleTheDisconnectionWithServer() {
-    _isSocketOpen = false;
-    // if (gameData.myPattern != []) {
-    //   userDatabase.updatePattern(gameData.myPattern);
-    // }
-    gameData.goBackToLobby=true;
+  void _handleClient(Map<String, dynamic> json) {
+    ServerSendDto serverSendDto = ServerSendDto.fromJson(json);
+    gameData
+      ..playersWithId = serverSendDto.playersWithId
+      ..currentPage = serverSendDto.currentPage
+      ..readyPlayers = serverSendDto.readyPlayers
+      ..gameClickedPattern = serverSendDto.gameClickedPattern!
+      ..wonId = serverSendDto.wonId
+      ..turnId = serverSendDto.turnId!
+      ..setMyPattern(serverSendDto.clientIdWithPattern)
+      ..recentlyClicked = serverSendDto.recentlyClicked
+      ..calculateWon();
+    if (serverSendDto.messageType == MessageType.clicked) {
+      _sendDataAutomatically();
+    }
     gameData.notifyUI();
-    gameData.clear();
-    tcpSocket?.close();
-    serverIPAddress = "";
-    udpSocket.close();
-    clientSendDto.clear();
-    tcpSub?.cancel();
-    serverSendDto.clear();
-    gameData.goBackToLobby=true;
-    gameData.notifyUI();
-  }
-
-  void _send(ClientSendDto csd) {
-    Map<String, dynamic> msgJson = csd.toJson();
-    String msg = jsonEncode(msgJson);
-    try {
-      if (tcpSocket == null || !_isSocketOpen) {
-        print("MESSAGE SENT FAIL - tcpSocket is null or closed (isOpen=$_isSocketOpen)");
-        if (gameData.gameStarted) {
-          gameData.goBackToLobby = true;
-        }
-        gameData.notifyUI();
-        gameData.showReconnectButton = true;
-        gameData.connectionStatus.setStatus(
-          Status.disconnected,
-          message: "Connection loss!",
-        );
-        if (context != null) snackBar("Send failed: no socket");
-        _handleTheDisconnectionWithServer();
-        return;
-      }
-      tcpSocket!.write('$msg\n');
-      print("MESSAGE IS SENT");
-      if (context != null) snackBar("Message sent");
-    } catch (e, st) {
-      print("MESSAGE SENT FAIL");
-      print("Error sending message: $e");
-      print(st);
-      if (gameData.gameStarted) {
-        gameData.goBackToLobby = true;
-      }
-      gameData.notifyUI();
-      gameData.showReconnectButton = true;
-      gameData.connectionStatus.setStatus(
-        Status.disconnected,
-        message: "Connection loss!",
-      );
-      if (context != null) snackBar("Sent fail");
-      _handleTheDisconnectionWithServer();
-    }
-  }
-
-  Future<void> _discoverAndConnect() async {
-    // snackBar("Discovering");
-    try {
-      gameData.connectionStatus.setStatus(
-        Status.discovering,
-        message: "Scanning for host",
-      );
-      gameData.notifyUI();
-      (String, int)? host = await _discoverHost(timeout: Duration(seconds: 10));
-      if (host == null) {
-        if (gameData.gameStarted) {
-          gameData.goBackToLobby = true;
-        }
-        gameData.connectionStatus.setStatus(
-          Status.error,
-          message: "No host found",
-        );
-        gameData.notifyUI();
-        return;
-      }
-      serverIPAddress = host.$1;
-      gameData.connectionStatus.setStatus(
-        Status.connecting,
-        message: "Connecting to host",
-      );
-      gameData.notifyUI();
-      try {
-        tcpSocket = await Socket.connect(
-          host.$1,
-          host.$2,
-          timeout: const Duration(seconds: 5),
-        );
-      } catch (e) {
-        gameData.connectionStatus.setStatus(
-          Status.error,
-          message: "TCP chashed",
-        );
-        // snackBar("TCP CRASHED");
-      }
-      if (tcpSocket != null) {
-        _isSocketOpen = true;
-        print('TCP connected to ${tcpSocket!.remoteAddress.address}:${tcpSocket!.remotePort}');
-        tcpSocket!.done.then((_) {
-          _isSocketOpen = false;
-          print('TCP socket done/completed for ${tcpSocket!.remoteAddress.address}:${tcpSocket!.remotePort}');
-        }).catchError((e) {
-          _isSocketOpen = false;
-          print('TCP socket done with error: $e');
-        });
-      }
-      _send(clientSendDto);
-      gameData.connectionStatus.setStatus(
-        Status.connected,
-        message: "Connected",
-      );
-      // snackBar("Connected");
-      gameData.notifyUI();
-      tcpSub = tcpSocket!.lines.listen(
-        (line) {
-          Map<String, dynamic> msgJson = jsonDecode(line);
-          if (msgJson.isNotEmpty) {
-            serverSendDto = ServerSendDto.fromJson(msgJson);
-            gameData.setPlayersWithId(serverSendDto.playersWithId);
-            gameData.gameStarted = serverSendDto.gameStarted;
-            gameData.readyPlayers = serverSendDto.readyPlayers;
-            gameData.gameClickedPattern = serverSendDto.gameClickedPattern!;
-            gameData.wonList = serverSendDto.wonList!;
-            gameData.turnId = serverSendDto.turnId ?? -1;
-            if (serverSendDto.clientIdWithPattern.id >= 0 &&
-                serverSendDto.clientIdWithPattern.pattern.isNotEmpty) {
-              gameData.myPattern = serverSendDto.clientIdWithPattern.pattern;
-              gameData.setId(serverSendDto.clientIdWithPattern.id);
-            }
-            gameData.recentlyClicked = serverSendDto.recentlyClicked;
-            gameData.updateGameClickedPattern(serverSendDto.recentlyClicked);
-            gameData.calculateWon();
-            if (serverSendDto.messageType == MessageType.clicked) {
-              gameData.sendDataForCommunication();
-            }
-            gameData.notifyUI();
-            if (gameData.myPattern.isNotEmpty) {
-              // snackBar("GOT PATTERN AND ID ${gameData.myId}");
-              // print(gameData.myPattern);
-            }
-            // snackBar("ONE CYCLE COMPLETED");
-            // NECESSARY DO THE BELOW TASK
-            // CHECK THE STATE AND SEND THE DATA TO THE SERVER
-          }
-        },
-        onError: (e) {
-          if (gameData.gameStarted) {
-            gameData.goBackToLobby = true;
-          }
-          gameData.gameStarted=false;
-          gameData.showReconnectButton = true;
-          gameData.connectionStatus.setStatus(
-            Status.disconnected,
-            message: "Disconnected",
-          );
-          gameData.notifyUI();
-          _handleTheDisconnectionWithServer();
-        },
-        onDone: () {
-          if (gameData.gameStarted) {
-            gameData.goBackToLobby = true;
-          }
-          gameData.showReconnectButton = true;
-          gameData.connectionStatus.setStatus(
-            Status.disconnected,
-            message: "Disconnected",
-          );
-          gameData.notifyUI();
-          _handleTheDisconnectionWithServer();
-        },
-      );
-      tcpSub?.onDone(() {
-        _isSocketOpen = false;
-        print('tcpSub onDone called');
-      });
-    } catch (e) {
-      if (gameData.gameStarted) {
-        gameData.goBackToLobby = true;
-      }
-      gameData.showReconnectButton = true;
-      gameData.connectionStatus.setStatus(
-        Status.disconnected,
-        message: "Disconnected",
-      );
-      gameData.notifyUI();
-      _handleTheDisconnectionWithServer();
-    }
   }
 
   Future<(String, int)?> _discoverHost({required Duration timeout}) async {
@@ -317,14 +115,193 @@ class Client {
     });
     return completer.future;
   }
-  void mofidyContext(BuildContext con){
-    context=con;
+
+  Future<void> _discoverAndConnect() async {
+    try {
+      gameData.connectionStatus.setStatus(
+        Status.discovering,
+        message: "Scanning for host",
+      );
+      gameData.notifyUI();
+      (String, int)? host = await _discoverHost(timeout: Duration(seconds: 10));
+      if (host == null) {
+        if (gameData.currentPage == Navdata.gamingPage) {
+          gameData.currentPage = Navdata.rolePage;
+        }
+        gameData.connectionStatus.setStatus(
+          Status.error,
+          message: "No host found",
+        );
+        gameData.notifyUI();
+        return;
+      }
+      serverIPAddress = host.$1;
+      gameData.connectionStatus.setStatus(
+        Status.connecting,
+        message: "Connecting to host",
+      );
+      gameData.notifyUI();
+      try {
+        tcpSocket = await Socket.connect(
+          host.$1,
+          host.$2,
+          timeout: const Duration(seconds: 5),
+        );
+      } catch (e) {
+        gameData.connectionStatus.setStatus(
+          Status.error,
+          message: "TCP chashed",
+        );
+        // snackBar("TCP CRASHED");
+      }
+      _send(clientSendDto);
+      gameData.connectionStatus.setStatus(
+        Status.connected,
+        message: "Connected",
+      );
+      // snackBar("Connected");
+      gameData.notifyUI();
+      tcpSub = tcpSocket!.lines.listen(
+        (line) {
+          Map<String, dynamic> json = jsonDecode(line);
+          if (json.isNotEmpty) {
+            _handleClient(json);
+          }
+        },
+        onError: (e) {
+          if (gameData.currentPage == Navdata.gamingPage) {
+            gameData.currentPage = Navdata.rolePage;
+          }
+          gameData.showReconnectButton = true;
+          gameData.connectionStatus.setStatus(
+            Status.disconnected,
+            message: "Disconnected",
+          );
+          _handleTheDisconnectionWithSerrver();
+        },
+        onDone: () {
+          if (gameData.currentPage == Navdata.gamingPage) {
+            gameData.currentPage = Navdata.rolePage;
+          }
+          gameData.showReconnectButton = true;
+          gameData.connectionStatus.setStatus(
+            Status.disconnected,
+            message: "Disconnected",
+          );
+          _handleTheDisconnectionWithSerrver();
+        },
+      );
+    } catch (e) {
+      if (gameData.currentPage == Navdata.gamingPage) {
+        gameData.currentPage = Navdata.rolePage;
+      }
+      gameData.showReconnectButton = true;
+      gameData.connectionStatus.setStatus(
+        Status.disconnected,
+        message: "Disconnected",
+      );
+      _handleTheDisconnectionWithSerrver();
+    }
+  }
+
+  void modifyContext(BuildContext context) {
+    this.context = context;
+  }
+
+  void _sendDataAutomatically() {
+    if (gameData.turnId == gameData.myId) {
+      ClientSendDto clientSendDto = ClientSendDto(
+        name: gameData.name ?? "",
+        isWon: gameData.isWon(),
+        isReady: gameData.isReady(),
+        id: gameData.myId,
+        gotPattern: gameData.myPattern.isNotEmpty,
+        noOfPatternMatched: gameData.indexesOfWonPatternMatched.length,
+        messageType: MessageType.automatic,
+        recentlyClicked: -11
+      );
+      sendMessageToServer(clientSendDto);
+    }
+  }
+
+  void notifyReadyToAll(bool ready) {
+    ClientSendDto clientSendDto = ClientSendDto(
+      name: gameData.name ?? "",
+      isWon: false,
+      isReady: ready,
+      id: gameData.myId,
+      gotPattern: gameData.myPattern.isNotEmpty,
+      noOfPatternMatched: 0,
+      messageType: MessageType.clicked,
+      recentlyClicked: -11
+    );
+    sendMessageToServer(clientSendDto);
+  }
+
+  _send(ClientSendDto clientSendDto) {
+    Map<String, dynamic> msgJson = clientSendDto.toJson();
+    String msg = jsonEncode(msgJson);
+    try {
+      if (tcpSocket == null) {
+        if (gameData.currentPage == Navdata.gamingPage) {
+          gameData.currentPage = Navdata.rolePage;
+          gameData.showReconnectButton = true;
+        }
+        gameData.connectionStatus.setStatus(
+          Status.disconnected,
+          message: "Connection loss!",
+        );
+        gameData.notifyUI();
+
+        _handleTheDisconnectionWithSerrver();
+        return;
+      }
+      tcpSocket!.write('$msg\n');
+    } catch (e) {
+      if (gameData.currentPage == Navdata.gamingPage) {
+        gameData.currentPage = Navdata.rolePage;
+      }
+      gameData.showReconnectButton = true;
+      gameData.connectionStatus.setStatus(
+        Status.disconnected,
+        message: "Connection loss!",
+      );
+      gameData.notifyUI();
+      _handleTheDisconnectionWithSerrver();
+    }
+  }
+
+  void _handleTheDisconnectionWithSerrver() {
+    gameData.currentPage = Navdata.rolePage;
+    gameData.notifyUI();
+    dispose();
   }
 
   void sendMessageToServer(ClientSendDto clientSendDto) {
-    print("INSIDE THE CLIENT SERVER");
-    if (context != null) snackBar("READY MESSAGE SENDING");
-    // print("READY MESSAGE SENDING");
     _send(clientSendDto);
+  }
+
+  void dispose() {
+    gameData.clear();
+    tcpSocket?.close();
+    serverIPAddress = "";
+    udpSocket.close();
+    clientSendDto.clear();
+    tcpSub?.cancel();
+    serverSendDto.clear();
+    gameData.notifyUI();
+  }
+
+  Future<void> _start() async {
+    udpPort = net.udpPort;
+    tcpPort = net.tcpPort;
+    udpTag = net.udpTag;
+    userDatabase = UserDatabase.instance;
+    clientName = await userDatabase.getUserName();
+    clientSendDto.gotPattern = false;
+    clientSendDto.isReady = false;
+    clientSendDto.isWon = false;
+    clientSendDto.name = clientName!;
+    await _discoverAndConnect();
   }
 }

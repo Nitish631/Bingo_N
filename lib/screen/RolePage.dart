@@ -1,19 +1,21 @@
 import 'package:bingo_n/Communication/Client.dart';
-import 'package:bingo_n/Communication/Server.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/screen/GameLobby.dart';
+import 'package:bingo_n/Communication/Server.dart';
+import 'package:bingo_n/DTOs/navData.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Rolepage extends StatelessWidget {
   Rolepage({super.key});
-  GameData gameData = GameData.instance;
-  void navigateLobbyIfconnected(BuildContext context) async {
+  Gamedata gameData = Gamedata.instance;
+  void navigateLobbyIfconnected(BuildContext context,var communication) async {
     if (await isConnectedToWifi()) {
+      gameData.currentPage = Navdata.lobby;
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (builder) => GameLobby(isServer: gameData.isServer,)),
+        MaterialPageRoute(builder: (builder) => GameLobby(communication: communication,gameData: gameData,)),
       );
       return;
     }
@@ -47,7 +49,6 @@ class Rolepage extends StatelessWidget {
   }
   @override
   Widget build(BuildContext context) {
-    gameData.goBackToLobby=false;
     return Scaffold(
       body: Container(
         height: double.infinity,
@@ -79,11 +80,9 @@ class Rolepage extends StatelessWidget {
                   children: [
                     InkWell(
                       onTap: () {
-                        gameData.clear();
-                        gameData.goBackToLobby=false;
-                        gameData.isServer = true;
-                        Server.instance.restart(context);
-                        navigateLobbyIfconnected(context);
+                        Server instance=Server.instance;
+                        instance.start(context);
+                        navigateLobbyIfconnected(context, instance);
                       },
 
                       child: Container(
@@ -107,11 +106,9 @@ class Rolepage extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: () {
-                        gameData.clear();
-                        gameData.goBackToLobby=false;
-                        gameData.isServer = false;
-                        Client.instance.restartConnection(context);
-                        navigateLobbyIfconnected(context);
+                        Client instance=Client.instance;
+                        instance.start(context);
+                        navigateLobbyIfconnected(context, instance);
                       },
                       child: Container(
                         width: 120,

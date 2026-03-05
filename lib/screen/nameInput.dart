@@ -45,7 +45,7 @@ class _NameInputPageState extends State<NameInputPage> {
     }
     await dbInst.updateName(enteredName);
     myName = enteredName;
-    GameData.instance.name=myName;
+    Gamedata.instance.name=myName;
     if (!mounted) return;
     Navigator.pushReplacement(
       context,

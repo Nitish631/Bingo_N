@@ -1,63 +1,57 @@
+import 'package:bingo_n/DTOs/ClientSendDto.dart';
+import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/Communication/Server.dart';
+import 'package:bingo_n/DTOs/navData.dart';
 import 'package:bingo_n/screen/wonPage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GamingPage extends StatefulWidget {
-  const GamingPage({super.key});
+  final communication;
+
+  const GamingPage({super.key, required this.communication});
 
   @override
   State<GamingPage> createState() => _GamingPageState();
 }
 
 class _GamingPageState extends State<GamingPage> {
-  GameData gameData = GameData.instance;
-  Color unClickedContainerColor = const Color.fromARGB(255, 0, 213, 255);
-  Color ClickedContainerColor = const Color.fromARGB(170, 0, 213, 255);
+  var communication;
+  Gamedata gameData = Gamedata.instance;
   @override
   void initState() {
-    // TODO: implement initState
+    communication = widget.communication;
+    communication.modifyContext(context);
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      gameData.mofidyContext(context);
-    });
   }
 
-  void snackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "$message",
-          style: TextStyle(fontSize: 12, color: Colors.white),
-        ),
-        width: 150,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusGeometry.circular(15),
-        ),
-        duration: Duration(milliseconds: 700),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  void removeClient(int id) {
+    if (communication is Server) {
+      (communication as Server).removeClient(id);
+    }
   }
 
-  @override
+  
+ Color unClickedContainerColor = const Color.fromARGB(255, 0, 213, 255);
+  Color ClickedContainerColor = const Color.fromARGB(170, 0, 213, 255);
+ @override
   Widget build(BuildContext context) {
     List playersIdlist = gameData.playersWithId.entries.toList();
     double width = MediaQuery.of(context).size.width * 0.9;
     double height = width * 6 / 7;
     return Scaffold(
       body: AnimatedBuilder(
-        animation: GameData.instance,
+        animation: Gamedata.instance,
         builder: (context, child) {
-          if (gameData.goBackToLobby) {
+          if (gameData.currentPage==Navdata.rolePage) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
             Navigator.pop(context);
               
             });
           }
-          if (gameData.goToWinPage) {
+          if (gameData.currentPage==Navdata.wonPage) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
               Navigator.push(
@@ -192,32 +186,7 @@ class _GamingPageState extends State<GamingPage> {
                                                         if (!gameData
                                                             .isMyTurn())
                                                           return;
-                                                        snackBar("CLICKED");
-                                                        gameData
-                                                            .updateGameClickedPattern(
-                                                              element,
-                                                            );
-                                                        // snackBar("DATA UPDATED");
-                                                        if (gameData
-                                                            .wonList
-                                                            .isNotEmpty) {
-                                                          WidgetsBinding
-                                                              .instance
-                                                              .addPersistentFrameCallback((
-                                                                _,
-                                                              ) {
-                                                                Navigator.pushReplacement(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder:
-                                                                        (
-                                                                          context,
-                                                                        ) =>
-                                                                            wonPage(),
-                                                                  ),
-                                                                );
-                                                              });
-                                                        }
+                                                        communication.updateGameClickedPattern(element);
                                                       },
                                                       child: Container(
                                                         color: clicked
@@ -291,9 +260,9 @@ class _GamingPageState extends State<GamingPage> {
                                 child: Text(
                                   name,
                                   style: GoogleFonts.poppins(
-                                    fontSize: gameData.isTurnOfId(id) ? 25 : 20,
+                                    fontSize: gameData.isTurnOf(id) ? 25 : 20,
                                     fontWeight: FontWeight.bold,
-                                    color: gameData.isTurnOfId(id)
+                                    color: gameData.isTurnOf(id)
                                         ? Color.fromRGBO(255, 0, 234, 1)
                                         : Color.fromRGBO(112, 0, 0, 1),
                                   ),

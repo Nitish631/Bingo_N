@@ -14,7 +14,7 @@ class PreGamePage extends StatefulWidget {
 }
 
 class _PreGamePageState extends State<PreGamePage> {
-  GameData gameData = GameData.instance;
+  Gamedata gameData=Gamedata.instance;
   @override
   void initState() {
     super.initState();

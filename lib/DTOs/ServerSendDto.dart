@@ -1,5 +1,5 @@
 import 'package:bingo_n/DTOs/PatternWithId.dart';
-import 'package:bingo_n/Dummy/navData.dart';
+import 'package:bingo_n/DTOs/navData.dart';
 import 'package:bingo_n/GameData/MessageType.dart';
 
 class ServerSendDto {

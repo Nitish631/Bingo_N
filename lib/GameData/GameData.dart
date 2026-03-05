@@ -4,22 +4,24 @@ import 'package:bingo_n/Communication/Client.dart';
 import 'package:bingo_n/Communication/Server.dart';
 import 'package:bingo_n/DTOs/ClientSendDto.dart';
 import 'package:bingo_n/GameData/ConnectionStatus.dart';
+import 'package:bingo_n/GameData/MessageType.dart';
 import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
 
 class GameData extends ChangeNotifier {
-  Map<int, String> playersWithId={};
+  Map<int, String> playersWithId = {};
   bool gameStarted = false; //
   List<int> readyPlayers = []; //
   List<int> gameClickedPattern = [];
   List<int> wonList = [];
-  int turnId=-1 ; //
-  late List<int> myPattern;
+  int turnId = -1; //
+  List<int> myPattern=[];
   List<int> indexClickedPattern = [];
-  late int _myId ; //
-   String? name;//
+  late int _myId; //
+  String? name; //
   bool showReconnectButton = false;
   bool goBackToLobby = false;
+  bool goToWinPage = false;
   List<int> indexesOfWonPatternMatched = [];
   Map<int, String> matchingCharacter = {};
   List<String> matchingString = ['B', 'I', 'N', 'G', 'O'];
@@ -27,20 +29,19 @@ class GameData extends ChangeNotifier {
   late ConnectionStatus connectionStatus = ConnectionStatus.instance;
   bool isServer = false;
   int recentlyClicked = -11;
-  int serverId=-22;
-int wonId=205;
+  int serverId = -22;
+  int wonId = 205;
   static final GameData instance = GameData._init();
   GameData._init();
   UserDatabase userDatabase = UserDatabase.instance;
   bool storedPattern = false;
-  Server? _server;
-  Client? _client;
+  var communication;
   void attachServer(Server server) {
-    _server = server;
+    communication = server;
   }
 
   void attachClient(Client client) {
-    _client = client;
+    communication = client;
   }
 
   final List<List<int>> winningList = [
@@ -58,23 +59,14 @@ int wonId=205;
     [4, 8, 12, 16, 20], //11
   ];
   void setPlayersWithId(Map<int, String> map) {
-    if (!gameStarted) {
-      playersWithId
-        ..clear()
-        ..addAll(map);
-    }
+    playersWithId
+      ..clear()
+      ..addAll(map);
   }
 
-  int get myId => _myId!;
+  int get myId => _myId;
   void setId(int? id) {
-    _myId =id??0;
-  }
-
-  void hasWon(){
-    if(wonList.isNotEmpty){
-      wonId= wonList.first;
-      notifyListeners();
-    }
+    _myId = id ?? 0;
   }
 
   List<int> alterPattern(List<int> list) {
@@ -121,21 +113,31 @@ int wonId=205;
       name = Name;
     }
   }
+  void mofidyContext(BuildContext context){
+    if(communication is Server){
+      communication.mofidyContext(context);
+    }else if(communication is Client){
+      communication.mofidyContext(context);
+    }
+  }
 
   void clear() {
-    playersWithId.clear();
+    playersWithId={};
     gameStarted = false;
-    readyPlayers = [];
-    gameClickedPattern = [];
-    wonList = [];
+    readyPlayers.clear();
+    gameClickedPattern.clear();
+    wonList.clear();
     turnId = -1;
-    myPattern = [];
+    myPattern.clear();
     _myId = -1; //
     showReconnectButton = false;
-    indexClickedPattern = [];
+    indexClickedPattern.clear();
     connectionStatus.reset();
     recentlyClicked = -11;
     storedPattern = false;
+    goBackToLobby = false;
+    goToWinPage = false;
+    connectionStatus.setStatus(Status.disconnected, message: "No connection");
     notifyListeners();
   }
 
@@ -145,50 +147,48 @@ int wonId=205;
 
   void notifyReadyToServer(bool ready) {
     ClientSendDto clientSendDto = ClientSendDto(
-      name: name??"",
+      name: name ?? "",
       isWon: false,
       isReady: ready,
       id: myId,
       gotPattern: myPattern.isNotEmpty,
       noOfPatternMatched: 0,
+      recentlyClicked: recentlyClicked,
+      messageType: MessageType.clicked
     );
-    _client?.sendMessageToServer(clientSendDto);
+    communication.sendMessageToServer(clientSendDto);
     if (ready) {
       readyPlayers.add(_myId);
     } else {
       readyPlayers.remove(_myId);
     }
-    notifyListeners();
   }
 
   void updateGameClickedPattern(int clicked) {
     if (clicked < 0) return;
     if (!gameClickedPattern.contains(clicked)) {
+      recentlyClicked = clicked;
       gameClickedPattern.add(clicked);
     }
-    notifyListeners();
-    return;
-  }
-
-  void updateGameClickedPatternWithIndexAndNumber(int index, int num) {
-    updateGameClickedPattern(num);
-    if (index < 0) return;
-    if (!indexClickedPattern.contains(index)) {
-      indexClickedPattern.add(index);
-    }
+    calculateWon();
+    print("SENDING DATA");
+    sendDataForCommunication();
   }
 
   void addWonPlayer(id) {
     if (!wonList.contains(id)) {
       wonList.add(id);
     }
-    notifyListeners();
   }
 
   void calculateWon() {
     //CALCULATE IF YOU WON
     if (!gameStarted) return;
-    if (wonList.contains(_myId)) return;
+    if (wonList.isNotEmpty) {
+      wonId = wonList.first;
+      goToWinPage = true;
+      return;
+    }
     if (indexesOfWonPatternMatched.length >= 5) {
       wonList.add(_myId);
       saveMyPatternToDBifWon();
@@ -223,9 +223,10 @@ int wonId=205;
     }
     if (indexesOfWonPatternMatched.length >= 5) {
       wonList.add(_myId);
+      wonId = wonList.first;
+      goToWinPage = true;
       saveMyPatternToDBifWon();
     }
-    notifyListeners();
   }
 
   String getCharIfPatternMatched(int patternIndex) {
@@ -256,30 +257,32 @@ int wonId=205;
   }
 
   void sendDataForCommunication() {
-    if (isServer) {
-      _server!.sendGameDataToAllTheClients();
+    if (communication is Server) {
+      print("SENDING BY SERVER");
+      communication.sendGameDataToAllTheClients();
     } else {
       ClientSendDto clientSendDto = ClientSendDto(
-        name: name??"",
+        recentlyClicked: recentlyClicked,
+        name: name ?? "",
         isWon: wonList.contains(myId),
         isReady: readyPlayers.contains(myId),
         gotPattern: myPattern.isNotEmpty,
         noOfPatternMatched: indexesOfWonPatternMatched.length,
+        messageType: MessageType.clicked
       );
       clientSendDto
         ..id = myId
         ..recentlyClicked = recentlyClicked;
-      _client?.sendMessageToServer(clientSendDto);
+        print("SENDING BY CLIENT");
+      communication.sendMessageToServer(clientSendDto);
     }
-    notifyListeners();
   }
 
   void removeClient(int id) {
-    if (!isServer) return;
-    _server!.removeClient(id);
+    if (!(communication is Server)) return;
+    communication.removeClient(id);
     playersWithId.remove(id);
-    notifyListeners();
-    _server!.sendGameDataToAllTheClients();
+    communication.sendGameDataToAllTheClients();
   }
 
   int returnNOnReadyPlayersCountWhileStarting() {
@@ -293,7 +296,6 @@ int wonId=205;
     if (count == 0) {
       gameStarted = true;
     }
-    notifyListeners();
     return count;
   }
 

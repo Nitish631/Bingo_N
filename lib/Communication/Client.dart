@@ -28,18 +28,21 @@ class Client {
   late UserDatabase userDatabase;
   StreamSubscription? tcpSub;
   late ServerSendDto serverSendDto;
-  late GameData gameData;
+  GameData gameData=GameData.instance;
   String? clientName;
+  bool _isSocketOpen = false;
 
   static Client instance = Client._init();
   Client._init();
   BuildContext? context;
   Future<void> start(BuildContext context) async {
     this.context = context;
+    // snackBar("CLIENT STARTED");
     try {
+      gameData.attachClient(instance);
       await _start();
-      gameData.attachClient(this);
     } catch (e) {
+      // snackBar("CLIENT CRASHED");
       gameData.connectionStatus.setStatus(
         Status.error,
         message: "Client crashed",
@@ -48,30 +51,29 @@ class Client {
     }
   }
 
-  // void snackBar(String message) {
-  //   ScaffoldMessenger.of(context!).showSnackBar(
-  //     SnackBar(
-  //       content: Text(
-  //         "$message",
-  //         style: TextStyle(fontSize: 12, color: Colors.white),
-  //       ),
-  //       width: 250,
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadiusGeometry.circular(15),
-  //       ),
-  //       duration: Duration(milliseconds: 700),
-  //       behavior: SnackBarBehavior.floating,
-  //     ),
-  //   );
-  // }
+  void snackBar(String message) {
+    if (context == null) return;
+    ScaffoldMessenger.of(context!).showSnackBar(
+      SnackBar(
+        content: Text(
+          "$message",
+          style: TextStyle(fontSize: 12, color: Colors.white),
+        ),
+        width: 250,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(15),
+        ),
+        duration: Duration(milliseconds: 700),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> _start() async {
     udpPort = net.udpPort;
     tcpPort = net.tcpPort;
     udpTag = net.udpTag;
     userDatabase = UserDatabase.instance;
-    gameData = GameData.instance;
-    gameData.clear();
     clientName = await userDatabase.getUserName();
     clientSendDto.gotPattern = false;
     clientSendDto.isReady = false;
@@ -86,17 +88,18 @@ class Client {
   }
 
   void dispose() {
-    _handleTheDisconnectionWithServer();
+    try {
+      _handleTheDisconnectionWithServer();
+      gameData.gameStarted=false;
+    } catch (_) {}
   }
 
   void _handleTheDisconnectionWithServer() {
-    if (gameData.myPattern != []) {
-      userDatabase.updatePattern(gameData.myPattern);
-    }
-    gameData.connectionStatus.setStatus(
-      Status.error,
-      message: "Client crashed",
-    );
+    _isSocketOpen = false;
+    // if (gameData.myPattern != []) {
+    //   userDatabase.updatePattern(gameData.myPattern);
+    // }
+    gameData.goBackToLobby=true;
     gameData.notifyUI();
     gameData.clear();
     tcpSocket?.close();
@@ -105,42 +108,52 @@ class Client {
     clientSendDto.clear();
     tcpSub?.cancel();
     serverSendDto.clear();
+    gameData.goBackToLobby=true;
+    gameData.notifyUI();
   }
 
   void _send(ClientSendDto csd) {
     Map<String, dynamic> msgJson = csd.toJson();
     String msg = jsonEncode(msgJson);
     try {
-      tcpSocket!.write('$msg\n'); // tcpSocket!.add(utf8.encode('$msg\n'));
-    } catch (e) {
+      if (tcpSocket == null || !_isSocketOpen) {
+        print("MESSAGE SENT FAIL - tcpSocket is null or closed (isOpen=$_isSocketOpen)");
+        if (gameData.gameStarted) {
+          gameData.goBackToLobby = true;
+        }
+        gameData.notifyUI();
+        gameData.showReconnectButton = true;
+        gameData.connectionStatus.setStatus(
+          Status.disconnected,
+          message: "Connection loss!",
+        );
+        if (context != null) snackBar("Send failed: no socket");
+        _handleTheDisconnectionWithServer();
+        return;
+      }
+      tcpSocket!.write('$msg\n');
+      print("MESSAGE IS SENT");
+      if (context != null) snackBar("Message sent");
+    } catch (e, st) {
+      print("MESSAGE SENT FAIL");
+      print("Error sending message: $e");
+      print(st);
       if (gameData.gameStarted) {
         gameData.goBackToLobby = true;
       }
+      gameData.notifyUI();
       gameData.showReconnectButton = true;
       gameData.connectionStatus.setStatus(
         Status.disconnected,
         message: "Connection loss!",
       );
-      gameData.notifyUI();
+      if (context != null) snackBar("Sent fail");
       _handleTheDisconnectionWithServer();
     }
   }
 
-  // int? getMyId() {
-  //   return serverSendDto.playersWithId.entries
-  //               .firstWhere(
-  //                 (entry) => entry.value == clientName,
-  //                 orElse: () => const MapEntry(-1, ''),
-  //               )
-  //               .key ==
-  //           -1
-  //       ? null
-  //       : serverSendDto.playersWithId.entries
-  //             .firstWhere((e) => e.value == clientName)
-  //             .key;
-  // }
-
   Future<void> _discoverAndConnect() async {
+    // snackBar("Discovering");
     try {
       gameData.connectionStatus.setStatus(
         Status.discovering,
@@ -176,19 +189,31 @@ class Client {
           Status.error,
           message: "TCP chashed",
         );
+        // snackBar("TCP CRASHED");
+      }
+      if (tcpSocket != null) {
+        _isSocketOpen = true;
+        print('TCP connected to ${tcpSocket!.remoteAddress.address}:${tcpSocket!.remotePort}');
+        tcpSocket!.done.then((_) {
+          _isSocketOpen = false;
+          print('TCP socket done/completed for ${tcpSocket!.remoteAddress.address}:${tcpSocket!.remotePort}');
+        }).catchError((e) {
+          _isSocketOpen = false;
+          print('TCP socket done with error: $e');
+        });
       }
       _send(clientSendDto);
       gameData.connectionStatus.setStatus(
         Status.connected,
         message: "Connected",
       );
+      // snackBar("Connected");
       gameData.notifyUI();
       tcpSub = tcpSocket!.lines.listen(
         (line) {
           Map<String, dynamic> msgJson = jsonDecode(line);
           if (msgJson.isNotEmpty) {
             serverSendDto = ServerSendDto.fromJson(msgJson);
-            // snackBar("MESSAGE GOT FROM SERVER");
             gameData.setPlayersWithId(serverSendDto.playersWithId);
             gameData.gameStarted = serverSendDto.gameStarted;
             gameData.readyPlayers = serverSendDto.readyPlayers;
@@ -203,24 +228,24 @@ class Client {
             gameData.recentlyClicked = serverSendDto.recentlyClicked;
             gameData.updateGameClickedPattern(serverSendDto.recentlyClicked);
             gameData.calculateWon();
-            gameData.hasWon();
             if (serverSendDto.messageType == MessageType.clicked) {
               gameData.sendDataForCommunication();
             }
             gameData.notifyUI();
-            if(gameData.myPattern.isNotEmpty){
+            if (gameData.myPattern.isNotEmpty) {
               // snackBar("GOT PATTERN AND ID ${gameData.myId}");
               // print(gameData.myPattern);
             }
             // snackBar("ONE CYCLE COMPLETED");
             // NECESSARY DO THE BELOW TASK
-            //CHECK THE STATE AND SEND THE DATA TO THE SERVER
+            // CHECK THE STATE AND SEND THE DATA TO THE SERVER
           }
         },
         onError: (e) {
           if (gameData.gameStarted) {
             gameData.goBackToLobby = true;
           }
+          gameData.gameStarted=false;
           gameData.showReconnectButton = true;
           gameData.connectionStatus.setStatus(
             Status.disconnected,
@@ -242,6 +267,10 @@ class Client {
           _handleTheDisconnectionWithServer();
         },
       );
+      tcpSub?.onDone(() {
+        _isSocketOpen = false;
+        print('tcpSub onDone called');
+      });
     } catch (e) {
       if (gameData.gameStarted) {
         gameData.goBackToLobby = true;
@@ -288,9 +317,13 @@ class Client {
     });
     return completer.future;
   }
+  void mofidyContext(BuildContext con){
+    context=con;
+  }
 
   void sendMessageToServer(ClientSendDto clientSendDto) {
-    // snackBar("READY MESSAGE SENDING");
+    print("INSIDE THE CLIENT SERVER");
+    if (context != null) snackBar("READY MESSAGE SENDING");
     // print("READY MESSAGE SENDING");
     _send(clientSendDto);
   }

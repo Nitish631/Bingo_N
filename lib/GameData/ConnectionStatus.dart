@@ -20,6 +20,6 @@ class ConnectionStatus {
   }
   void reset(){
     _status =Status.idle;
-    _message=null;
+    _message="Not connected";
   }
 }

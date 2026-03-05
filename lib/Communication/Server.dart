@@ -23,7 +23,7 @@ class Server {
   }
   bool serverStarted = false;
 
-  List<int> availableId = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  List<int> availableId = List.empty();
   late Timer becon;
   late RawDatagramSocket udpSocket;
   final net = NetworkData.instance;
@@ -40,7 +40,7 @@ class Server {
     Map<int, String> nameWithId = {};
     if (clients.length == 1) return nameWithId;
     for (ClientData client in clients) {
-      nameWithId[client.id] = client.name ;
+      nameWithId[client.id] = client.name;
     }
     return nameWithId;
   }
@@ -82,29 +82,31 @@ class Server {
   Future<void> dispose() async {
     serverStarted = false;
     try {
-      becon.cancel();
-    } catch (_) {}
-    try {
-      udpSocket.close();
-    } catch (_) {}
-    for (ClientData client in clients.toList()) {
       try {
-        await client.subscription?.cancel();
+        becon.cancel();
       } catch (_) {}
+      try {
+        udpSocket.close();
+      } catch (_) {}
+      for (ClientData client in clients.toList()) {
+        try {
+          await client.subscription?.cancel();
+        } catch (_) {}
 
+        try {
+          await client.clientSocket.close();
+        } catch (_) {}
+      }
+      clients.clear();
       try {
-        await client.clientSocket.close();
+        await serverSocket.close();
       } catch (_) {}
-    }
-    clients.clear();
-    try {
-      await serverSocket.close();
+      turnPattern.clear();
+      serverClient = ClientData.minimal();
+      gameData.clear();
+      gameData.gameStarted = false;
+      gameData.notifyUI();
     } catch (_) {}
-    turnPattern.clear();
-    serverClient = ClientData.minimal();
-    gameData.clear();
-    gameData.notifyUI();
-    debugPrint("Server disposed completely");
   }
 
   int getNextTurn() {
@@ -150,7 +152,7 @@ class Server {
   }
 
   List<int> generatePattern(int id) {
-    List<int> pattern = List.generate(25, (i) => i+1);
+    List<int> pattern = List.generate(25, (i) => i + 1);
     for (int i = 0; i < id; i++) {
       pattern.shuffle(Random());
     }
@@ -176,6 +178,32 @@ class Server {
   }
 
   Future<void> _start() async {
+    availableId = [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+    ];
     serverStarted = true;
     UserDatabase userDatabase = UserDatabase.instance;
     ip = await net.getLocalIPv4();
@@ -194,11 +222,12 @@ class Server {
     }
     gameData.playersWithId[id] = serverClient.name;
     gameData.serverId = serverClient.id;
+    gameData.setId(serverClient.id);
     gameData.readyPlayers.add(id);
     gameData.setName(name);
-    gameData.setId(serverClient.id);
     gameData.turnId = id;
-    gameData.myPattern = await userDatabase.getStoredPattern();
+    gameData.myPattern = generatePattern(id);
+    print(gameData.myPattern);
     gameData.notifyUI();
     await UDPBroadCaster(ip, tcpPort, udpTag, udpPort);
     await startTCP(tcpPort);
@@ -240,6 +269,10 @@ class Server {
       );
       gameData.notifyUI();
     } else if (clients.length == 1) {
+      if (gameData.gameStarted) {
+        gameData.gameStarted = false;
+        gameData.goBackToLobby = true;
+      }
       gameData.connectionStatus.setStatus(
         Status.disconnected,
         message: "Disconnected",
@@ -253,21 +286,23 @@ class Server {
     serverSocket.listen(_handleNewClient);
   }
 
-  // void snackBar(String message) {
-  //   ScaffoldMessenger.of(_context!).showSnackBar(
-  //     SnackBar(
-  //       content: Text(
-  //         "$message",
-  //         style: TextStyle(fontSize: 12, color: Colors.white),
-  //       ),
-  //       width: 200,
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadiusGeometry.circular(15),
-  //       ),
-  //       duration: Duration(milliseconds: 700),
-  //     ),
-  //   );
-  // }
+  void snackBar(String message) {
+    if (_context == null) return;
+    ScaffoldMessenger.of(_context!).showSnackBar(
+      SnackBar(
+        content: Text(
+          "$message",
+          style: TextStyle(fontSize: 12, color: Colors.white),
+        ),
+        width: 200,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(15),
+        ),
+        duration: Duration(milliseconds: 700),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> _handleNewClient(Socket clientSocket) async {
     if (clients.length > 7) {
@@ -288,35 +323,48 @@ class Server {
     notifyUiForTheConnection();
     client.subscription = clientSocket.lines.listen(
       (line) {
-        json = jsonDecode(line);
-        clientSendDto = ClientSendDto.fromJson(json);
-        id = clientSendDto.id ?? id;
-        client.name = clientSendDto.name;
-        if (!gameData.playersWithId.containsKey(id)) {
-          gameData.playersWithId[id] = client.name;
+        try {
+          json = jsonDecode(line);
+          clientSendDto = ClientSendDto.fromJson(json);
+          id = clientSendDto.id ?? id;
+          client.name = clientSendDto.name;
+          if (!gameData.playersWithId.containsKey(id)) {
+            gameData.playersWithId[id] = client.name;
+          }
+          client.hasWon = clientSendDto.isWon;
+          if (client.hasWon) {
+            gameData.addWonPlayer(client.id);
+            gameData.wonList = getWonList();
+            gameData.wonId = gameData.wonList.first;
+            gameData.goToWinPage = true;
+            getTurnIdONTurnRemove(client.id);
+          }
+          client.isReadyToPlay = clientSendDto.isReady;
+          client.gotPattern = clientSendDto.gotPattern;
+          client.pattern = clientGamePattern;
+          client.noOfPatternMatched = clientSendDto.noOfPatternMatched;
+          gameData.updateGameClickedPattern(
+            clientSendDto.recentlyClicked ?? -11,
+          );
+          gameData.recentlyClicked = clientSendDto.recentlyClicked ?? -11;
+          if (clientSendDto.messageType == MessageType.clicked) {
+            getNextTurn();
+          }
+          gameData.calculateWon();
+          if (gameData.wonList.contains(serverClient.id)) {
+            serverClient.hasWon = true;
+          }
+          snackBar("Communicated with Client");
           gameData.notifyUI();
+          sendPatternToAllTheClientWhoHaventGot();
+          _sendGameDataToAllTheClients();
+        } catch (e, st) {
+          print('Error handling client message: $e');
+          print(st);
+          print('Raw client line: $line');
+          // Remove client if message processing fails to keep state consistent
+          _handleTheRemovalOfTheClient(clientSocket, id);
         }
-        client.hasWon = clientSendDto.isWon;
-        if (client.hasWon) {
-          gameData.addWonPlayer(client.id);
-          gameData.wonList=getWonList();
-          getTurnIdONTurnRemove(client.id);
-        }
-        client.isReadyToPlay = clientSendDto.isReady;
-        client.gotPattern = clientSendDto.gotPattern;
-        client.pattern = clientGamePattern;
-        client.noOfPatternMatched = clientSendDto.noOfPatternMatched;
-        gameData.updateGameClickedPattern(clientSendDto.recentlyClicked ?? -11);
-        gameData.recentlyClicked = clientSendDto.recentlyClicked ?? -11;
-        getNextTurn();
-        gameData.calculateWon();
-        if (gameData.wonList.contains(serverClient.id)) {
-          serverClient.hasWon = true;
-        }
-        gameData.hasWon();
-        gameData.notifyUI();
-        sendPatternToAllTheClientWhoHaventGot();
-        _sendGameDataToAllTheClients();
       },
       onError: (error) {
         _handleTheRemovalOfTheClient(clientSocket, id);
@@ -332,6 +380,7 @@ class Server {
   }
 
   void _handleTheRemovalOfTheClient(Socket clientsocket, int id) {
+    notifyUiForTheConnection();
     clients.removeWhere((client) => client.clientSocket == clientsocket);
     gameData.playersWithId = getClientsWithId();
     gameData.readyPlayers = getReadyPlayers();
@@ -339,10 +388,18 @@ class Server {
     clientsocket.destroy();
     getTurnIdONTurnRemove(id);
     _sendGameDataToAllTheClients();
-    if(getClientsWithId().length==1){
-      gameData.connectionStatus.setStatus(Status.disconnected,message: "Disconnected");
-    }else{
-      gameData.connectionStatus.setStatus(Status.connected,message: "Connected");
+    if (getClientsWithId().length == 1) {
+      gameData.goBackToLobby = true;
+      gameData.gameStarted = false;
+      gameData.connectionStatus.setStatus(
+        Status.disconnected,
+        message: "Disconnected",
+      );
+    } else {
+      gameData.connectionStatus.setStatus(
+        Status.connected,
+        message: "Connected",
+      );
     }
     gameData.notifyUI();
   }
@@ -367,48 +424,53 @@ class Server {
   }
 
   void sendPatternToAllTheClientWhoHaventGot() {
-    if (clients.length == 1) return;
-    if (!gameData.gameStarted) {
-      ServerSendDto serverSendDto = ServerSendDto(
-        playersWithId: getClientsWithId(),
-        readyPlayers: getReadyPlayers(),
-        gameStarted: gameData.gameStarted,
-        clientIdWithPattern: PatternWithId(id: -1, pattern: List.empty()),
-      );
-      serverSendDto.messageType=MessageType.automatic;
-      serverSendDto.turnId = gameData.turnId;
-      serverSendDto.wonList=List.empty();
-      List<ClientData> clientsCopy = clients.toList();
-      List<int> pattern;
-      for (int i = 0; i < clientsCopy.length; i++) {
-        ClientData client = clients.elementAt(i);
-        if (client.id == serverClient.id) continue;
-        if (!client.gotPattern) {
-          try {
-            pattern = generatePattern(client.id);
-            client.pattern = pattern;
-            serverSendDto.clientIdWithPattern = PatternWithId(
-              id: client.id,
-              pattern: client.pattern,
-            );
-            serverSendDto.gameClickedPattern = gameData.gameClickedPattern;
-            serverSendDto.wonList = getWonList();
-            serverSendDto.recentlyClicked = gameData.recentlyClicked;
-            Map<String, dynamic> messageJson = serverSendDto.toJson();
-            sendMessageToClient(client, messageJson);
-          } catch (e) {
-            gameData
-              ..connectionStatus.setStatus(
-                Status.disconnected,
-                message: "Disconnected",
-              )
-              ..notifyUI();
+    // if (clients.length == 1) return;
+    // if (!gameData.gameStarted) {
+    //   ServerSendDto serverSendDto = ServerSendDto(
+    //     playersWithId: getClientsWithId(),
+    //     readyPlayers: getReadyPlayers(),
+    //     gameStarted: gameData.gameStarted,
+    //     clientIdWithPattern: PatternWithId(id: -1, pattern: List.empty()),
+    //     messageType: MessageType.automatic,
+    //   );
+    //   serverSendDto.messageType = MessageType.automatic;
+    //   serverSendDto.turnId = gameData.turnId;
+    //   serverSendDto.wonList = List.empty();
+    //   List<ClientData> clientsCopy = clients.toList();
+    //   List<int> pattern;
+    //   for (int i = 0; i < clientsCopy.length; i++) {
+    //     ClientData client = clients.elementAt(i);
+    //     if (client.id == serverClient.id) continue;
+    //     if (!client.gotPattern) {
+    //       try {
+    //         pattern = generatePattern(client.id);
+    //         client.pattern = pattern;
+    //         serverSendDto.clientIdWithPattern = PatternWithId(
+    //           id: client.id,
+    //           pattern: client.pattern,
+    //         );
+    //         serverSendDto.gameClickedPattern = gameData.gameClickedPattern;
+    //         serverSendDto.wonList = getWonList();
+    //         serverSendDto.recentlyClicked = gameData.recentlyClicked;
+    //         Map<String, dynamic> messageJson = serverSendDto.toJson();
+    //         sendMessageToClient(client, messageJson);
+    //       } catch (e) {
+    //         gameData
+    //           ..connectionStatus.setStatus(
+    //             Status.disconnected,
+    //             message: "Disconnected",
+    //           )
+    //           ..notifyUI();
 
-            _handleTheRemovalOfTheClient(client.clientSocket, client.id);
-          }
-        }
-      }
-    }
+    //         _handleTheRemovalOfTheClient(client.clientSocket, client.id);
+    //       }
+    //     }
+    //   }
+    // }
+  }
+
+  void mofidyContext(BuildContext con) {
+    _context = con;
   }
 
   void startGame() {
@@ -428,42 +490,42 @@ class Server {
   }
 
   void _sendGameDataToAllTheClients() {
-    ServerSendDto serverSendDto = ServerSendDto(
-      playersWithId: getClientsWithId(),
-      readyPlayers: getReadyPlayers(),
-      gameStarted: gameData.gameStarted,
-      gameClickedPattern: gameData.gameClickedPattern,
-      wonList: getWonList(),
-      turnId: gameData.turnId,
-      clientIdWithPattern: PatternWithId(id: -4, pattern: List.empty()),
-    );
-    serverSendDto.messageType=MessageType.automatic;
-    serverSendDto.clientIdWithPattern = PatternWithId(
-      id: -4,
-      pattern: List.empty(),
-    );
-    gameData.readyPlayers = getReadyPlayers();
-    gameData.wonList = getWonList();
-    serverSendDto.recentlyClicked = gameData.recentlyClicked;
-    Map<String, dynamic> messageJson = serverSendDto.toJson();
-    sendMessage(messageJson);
-  }
+  //   ServerSendDto serverSendDto = ServerSendDto(
+  //     playersWithId: getClientsWithId(),
+  //     readyPlayers: getReadyPlayers(),
+  //     gameStarted: gameData.gameStarted,
+  //     gameClickedPattern: gameData.gameClickedPattern,
+  //     wonList: getWonList(),
+  //     turnId: gameData.turnId,
+  //     clientIdWithPattern: PatternWithId(id: -4, pattern: List.empty()),
+  //     messageType: MessageType.automatic,
+  //   );
+  //   serverSendDto.clientIdWithPattern = PatternWithId(
+  //     id: -4,
+  //     pattern: List.empty(),
+  //   );
+  //   gameData.readyPlayers = getReadyPlayers();
+  //   gameData.wonList = getWonList();
+  //   serverSendDto.recentlyClicked = gameData.recentlyClicked;
+  //   Map<String, dynamic> messageJson = serverSendDto.toJson();
+  //   sendMessage(messageJson);
+  // }
 
-  void sendGameDataToAllTheClients() {
-    gameData.turnId=getNextTurn();
-    ServerSendDto serverSendDto = ServerSendDto(
-      playersWithId: gameData.playersWithId,
-      readyPlayers: gameData.readyPlayers,
-      gameStarted: gameData.gameStarted,
-      gameClickedPattern: gameData.gameClickedPattern,
-      wonList: getWonList(),
-      turnId: gameData.turnId,
-      clientIdWithPattern: PatternWithId(id: -0, pattern: List.empty()),
-    );
-    gameData.notifyUI();
-  serverSendDto.messageType=MessageType.clicked;
-    Map<String, dynamic> messageJson = serverSendDto.toJson();
-    sendMessage(messageJson);
+  // void sendGameDataToAllTheClients() {
+  //   gameData.turnId = getNextTurn();
+  //   ServerSendDto serverSendDto = ServerSendDto(
+  //     playersWithId: gameData.playersWithId,
+  //     readyPlayers: gameData.readyPlayers,
+  //     gameStarted: gameData.gameStarted,
+  //     gameClickedPattern: gameData.gameClickedPattern,
+  //     wonList: getWonList(),
+  //     turnId: gameData.turnId,
+  //     messageType: MessageType.clicked,
+  //     clientIdWithPattern: PatternWithId(id: -0, pattern: List.empty()),
+  //   );
+  //   Map<String, dynamic> messageJson = serverSendDto.toJson();
+  //   gameData.notifyUI();
+  //   sendMessage(messageJson);
   }
 
   void sendMessageToClient(
@@ -510,7 +572,7 @@ class Server {
     serverSocket.close();
     clients.clear();
     serverStarted = false;
-    GameData.instance.clear();
+    gameData.clear();
     gameData.notifyUI();
   }
 }

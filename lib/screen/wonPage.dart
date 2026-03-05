@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:bingo_n/GameData/GameData.dart';
+import 'package:bingo_n/screen/RolePage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -21,6 +22,9 @@ class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     // TODO: implement initState
+    gameData.gameStarted = false;
+    gameData.goToWinPage=false;
+    gameData.sendDataForCommunication();
     super.initState();
     animationController = AnimationController(
       vsync: this,
@@ -103,7 +107,11 @@ class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
                     bottom: 50,
                     child: InkWell(
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => Rolepage()),
+                          (Route<dynamic> route) => false,
+                        );
                       },
                       child: Container(
                         height: 70,

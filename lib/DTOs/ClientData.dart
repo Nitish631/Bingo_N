@@ -6,7 +6,7 @@ class ClientData {
   late String name;
   bool isReadyToPlay=false;
   bool hasWon =false;
-  late int id;
+  late int id=-1;
   late bool gotPattern;
   late int noOfPatternMatched;
   StreamSubscription? subscription;

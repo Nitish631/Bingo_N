@@ -1,3 +1,4 @@
+import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/screen/RolePage.dart';
 import 'package:bingo_n/database/userInfo.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,7 @@ class _NameInputPageState extends State<NameInputPage> {
     }
     await dbInst.updateName(enteredName);
     myName = enteredName;
+    GameData.instance.name=myName;
     if (!mounted) return;
     Navigator.pushReplacement(
       context,

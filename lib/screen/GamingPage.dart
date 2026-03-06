@@ -47,6 +47,7 @@ class _GamingPageState extends State<GamingPage> {
           if (gameData.currentPage==Navdata.rolePage) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
+              communication.dispose();
             Navigator.pop(context);
               
             });
@@ -56,7 +57,7 @@ class _GamingPageState extends State<GamingPage> {
               if (!mounted) return;
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => wonPage()),
+                MaterialPageRoute(builder: (context) => wonPage(communication: widget.communication,)),
               );
             });
           }

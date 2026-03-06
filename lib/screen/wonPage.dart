@@ -1,63 +1,44 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:bingo_n/Communication/Client.dart';
+import 'package:bingo_n/Communication/Server.dart';
 import 'package:bingo_n/GameData/GameData.dart';
 import 'package:bingo_n/screen/RolePage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class wonPage extends StatefulWidget {
-  const wonPage({super.key});
+  final communication;
+  const wonPage({super.key, required this.communication});
 
   @override
   State<wonPage> createState() => _wonPageState();
 }
 
 class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
-  Gamedata gameData=Gamedata.instance;
+  Gamedata gameData = Gamedata.instance;
   late AnimationController animationController;
-  late Animation<double> animation;
-  late Animation<double> colorValue;
-  late Animation<double> waveAnimation;
+  late Animation animation;
   @override
   void initState() {
-    super.initState();
+    widget.communication.modifyContext(context);
     animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 2500),
+      duration: Duration(milliseconds: 1500),
     );
-    animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        animationController.stop();
-        animationController.duration = Duration(milliseconds: 800);
-        animationController.repeat(min: 0.7, max: 1.0);
-      }
-    });
-    animation = Tween<double>(begin: 0, end: 300).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: Interval(0, 0.2, curve: Curves.easeInOut),
-      ),
+    animation = Tween<double>(begin: 85, end: 400).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.bounceIn),
     );
-    colorValue = Tween<double>(begin: 0, end: 800).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: Interval(0.28, 0.68, curve: Curves.easeInOut),
-      ),
-    );
-    waveAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: Interval(0.7, 1, curve: Curves.easeInOut),
-      ),
-    );
+    super.initState();
     animationController.forward();
   }
 
   @override
   void dispose() {
     // TODO: implement dispose
-    animationController.dispose();
+    Server.instance.dispose();
+    Client.instance.dispose();
     super.dispose();
   }
 
@@ -76,31 +57,82 @@ class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
             ],
           ),
         ),
-        child: AnimatedBuilder(
-          animation: animationController,
-          builder: (context, child) {
-            return Container(
-              height: double.infinity,
-              width: double.infinity,
-              child: Column(
-                children: [
-                  Center(
-                    child: Transform.translate(
-                      offset: Offset(0, 340 - animation.value),
-                      child: Container(
-                        height: animation.value / 2,
-                        width: double.infinity,
-                        child: Center(
-                          child: buildWaveText(
-                            "${gameData.playersWithId[gameData.wonId].toString().toUpperCase()} WON",
+        child: Container(
+          height: double.infinity,
+          width: double.infinity,
+          child: Stack(
+            children: [
+              AnimatedBuilder(
+                animation: animationController,
+                builder: (context, child) {
+                  return Positioned(
+                    bottom: animation.value,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      child: Center(
+                        child: Container(
+                          height: animation.value / 2,
+                          decoration: BoxDecoration(
+                            // color: Colors.blue,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Text(
+                                  "${gameData.playersWithId[gameData.wonId]==null?"":gameData.playersWithId[gameData.wonId]!.toUpperCase()}",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: animation.value / 8,
+                                    foreground: Paint()
+                                      ..shader =
+                                          LinearGradient(
+                                            colors: [
+                                              Color(0xFFFF0000),
+                                              Color(0xFFFF6A00),
+                                              Color.fromARGB(255, 226, 255, 7),
+                                            ],
+                                          ).createShader(
+                                            Rect.fromLTWH(0, 0, 400, 100),
+                                          ),
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Text(
+                                  "WINNER",
+                                  style: GoogleFonts.bebasNeue(
+                                    fontSize: animation.value / 6,
+                                    foreground: Paint()
+                                      ..shader =
+                                          LinearGradient(
+                                            colors: [
+                                              Color.fromARGB(255, 255, 242, 0),
+                                              Color(0xFFFF6A00),
+                                            ],
+                                          ).createShader(
+                                            Rect.fromLTWH(0, 0, 400, 100),
+                                          ),
+                                    letterSpacing: 5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    right: 20,
-                    bottom: 50,
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 50,
+                right: 0,
+                left: 0,
+                child: Container(
+                  height: 100,
+                  width: double.infinity,
+                  child: Center(
                     child: InkWell(
                       onTap: () {
                         Navigator.pushAndRemoveUntil(
@@ -129,47 +161,12 @@ class _wonPageState extends State<wonPage> with SingleTickerProviderStateMixin {
                       ),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget buildWaveText(String text) {
-    return AnimatedBuilder(
-      animation: animationController,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(text.length, (index) {
-            // wave calculation
-            double waveOffset = sin(waveAnimation.value + (index * 0.6)) * 10;
-
-            return Transform.translate(
-              offset: Offset(0, waveOffset),
-              child: Text(
-                text[index],
-                style: GoogleFonts.poppins(
-                  fontSize: animation.value / 8,
-                  fontWeight: FontWeight.w900,
-                  foreground: Paint()
-                    ..shader = LinearGradient(
-                      colors: [
-                        Color.fromRGBO(255, 0, 0, 1),
-                        Color.fromRGBO(255, 150, 0, 1),
-                        Color.fromRGBO(255, 0, 0, 1),
-                        Color.fromRGBO(255, 150, 0, 1),
-                      ],
-                    ).createShader(Rect.fromLTRB(0, 0, colorValue.value, 100)),
                 ),
               ),
-            );
-          }),
-        );
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

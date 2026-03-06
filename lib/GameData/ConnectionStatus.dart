@@ -18,6 +18,9 @@ class ConnectionStatus {
     _status=status;
     _message=message;
   }
+  bool isThis(Status status){
+    return _status==status;
+  }
   void reset(){
     _status =Status.idle;
     _message="Not connected";

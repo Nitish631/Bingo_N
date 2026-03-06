@@ -16,6 +16,7 @@ class Gamedata extends ChangeNotifier {
   String? name;
   List<int>myPattern=[];
   int count=0;
+  bool isReady=false;
   Map<int,String>matchingCharacter={};
   List<int> indexesOfWonPatternMatched=[];
   ConnectionStatus connectionStatus = ConnectionStatus.instance;  
@@ -54,13 +55,13 @@ class Gamedata extends ChangeNotifier {
     }
     return "";
   }
+
   bool isClicked(int num){
     return gameClickedPattern.contains(num);
   }
   bool isMyTurn(){
     return turnId==myId;
   }
-   bool isReady()=>readyPlayers.contains(myId);
   void clear(){
     playersWithId.clear();
     wonId=-4;
@@ -142,7 +143,8 @@ class Gamedata extends ChangeNotifier {
     return count;
   }
   bool isWon(){
-    return wonId==myId;
+    calculateWon();
+    return matchingCharacter.length>=5;
   }
 
   void notifyUI(){

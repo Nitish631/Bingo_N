@@ -13,6 +13,7 @@ class Rolepage extends StatelessWidget {
   void navigateLobbyIfconnected(BuildContext context,var communication) async {
     if (await isConnectedToWifi()) {
       gameData.currentPage = Navdata.lobby;
+      gameData.notifyUI();
       Navigator.push(
         context,
         MaterialPageRoute(builder: (builder) => GameLobby(communication: communication,gameData: gameData,)),
@@ -80,6 +81,7 @@ class Rolepage extends StatelessWidget {
                   children: [
                     InkWell(
                       onTap: () {
+                        Client.instance.dispose();
                         Server instance=Server.instance;
                         instance.start(context);
                         navigateLobbyIfconnected(context, instance);
@@ -106,6 +108,7 @@ class Rolepage extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: () {
+                        Server.instance.dispose();
                         Client instance=Client.instance;
                         instance.start(context);
                         navigateLobbyIfconnected(context, instance);

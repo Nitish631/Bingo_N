@@ -35,31 +35,65 @@ class Client {
   Client._privateConstructor();
   static final Client instance = Client._privateConstructor();
   BuildContext? context;
-  void start(BuildContext context) {
+  void start(BuildContext context) async {
     try {
+      gameData = Gamedata.instance;
+      gameData.connectionStatus.setStatus(Status.connecting,message: "Connecting");
+      gameData.notifyUI();
       dispose();
       this.context = context;
-      gameData = Gamedata.instance;
       gameData.isServer = false;
-      _start();
+      gameData.currentPage = Navdata.lobby;
+      gameData.notifyUI();
+      await _start();
     } catch (e) {
+      snackBar("Error starting client. Please try again.");
       print("ERROR IN CLIENT . CRASHED : $e");
+      _handleTheDisconnectionWithSerrver();
     }
+  }
+
+  void snackBar(String message) {
+    ScaffoldMessenger.of(context!).showSnackBar(
+      SnackBar(content: Text(message), duration: Duration(milliseconds: 500)),
+    );
+  }
+
+  void _handleTheDisconnectionWithSerrver() {
+    if (gameData.currentPage == Navdata.gamingPage) {
+      gameData.currentPage = Navdata.rolePage;
+    }
+    gameData.showReconnectButton = true;
+    gameData.connectionStatus.setStatus(
+      Status.disconnected,
+      message: "Disconnected",
+    );
+    gameData.notifyUI();
+    dispose();
   }
 
   void updateGameClickedPattern(int num) {
     if (num > 0) {
       if (gameData.turnId == gameData.myId) {
+        if (!gameData.gameClickedPattern.contains(num)) {
+          gameData.gameClickedPattern.add(num);
+        }
         ClientSendDto clientSendDto = ClientSendDto(
           name: gameData.name ?? "",
           isWon: gameData.isWon(),
-          isReady: gameData.isReady(),
+          isReady: gameData.isReady,
           id: gameData.myId,
           gotPattern: gameData.myPattern.isNotEmpty,
           noOfPatternMatched: gameData.indexesOfWonPatternMatched.length,
-          messageType: MessageType.automatic,
-          recentlyClicked: num
+          messageType: MessageType.clicked,
+          recentlyClicked: num,
         );
+        if (gameData.isWon()) {
+          gameData.wonId = gameData.myId;
+          gameData.currentPage = Navdata.wonPage;
+          // gameData.notifyUI();
+        }
+        snackBar("Won is ${clientSendDto.isWon ? "" : "not"} send");
         sendMessageToServer(clientSendDto);
       }
     }
@@ -67,6 +101,7 @@ class Client {
 
   void _handleClient(Map<String, dynamic> json) {
     ServerSendDto serverSendDto = ServerSendDto.fromJson(json);
+    // snackBar("Update from server: ${serverSendDto.readyPlayers.toString()}");
     gameData
       ..playersWithId = serverSendDto.playersWithId
       ..currentPage = serverSendDto.currentPage
@@ -76,11 +111,11 @@ class Client {
       ..turnId = serverSendDto.turnId!
       ..setMyPattern(serverSendDto.clientIdWithPattern)
       ..recentlyClicked = serverSendDto.recentlyClicked
-      ..calculateWon();
+      ..calculateWon()
+      ..notifyUI();
     if (serverSendDto.messageType == MessageType.clicked) {
       _sendDataAutomatically();
     }
-    gameData.notifyUI();
   }
 
   Future<(String, int)?> _discoverHost({required Duration timeout}) async {
@@ -169,37 +204,13 @@ class Client {
           }
         },
         onError: (e) {
-          if (gameData.currentPage == Navdata.gamingPage) {
-            gameData.currentPage = Navdata.rolePage;
-          }
-          gameData.showReconnectButton = true;
-          gameData.connectionStatus.setStatus(
-            Status.disconnected,
-            message: "Disconnected",
-          );
           _handleTheDisconnectionWithSerrver();
         },
         onDone: () {
-          if (gameData.currentPage == Navdata.gamingPage) {
-            gameData.currentPage = Navdata.rolePage;
-          }
-          gameData.showReconnectButton = true;
-          gameData.connectionStatus.setStatus(
-            Status.disconnected,
-            message: "Disconnected",
-          );
           _handleTheDisconnectionWithSerrver();
         },
       );
     } catch (e) {
-      if (gameData.currentPage == Navdata.gamingPage) {
-        gameData.currentPage = Navdata.rolePage;
-      }
-      gameData.showReconnectButton = true;
-      gameData.connectionStatus.setStatus(
-        Status.disconnected,
-        message: "Disconnected",
-      );
       _handleTheDisconnectionWithSerrver();
     }
   }
@@ -213,13 +224,14 @@ class Client {
       ClientSendDto clientSendDto = ClientSendDto(
         name: gameData.name ?? "",
         isWon: gameData.isWon(),
-        isReady: gameData.isReady(),
+        isReady: gameData.isReady,
         id: gameData.myId,
         gotPattern: gameData.myPattern.isNotEmpty,
         noOfPatternMatched: gameData.indexesOfWonPatternMatched.length,
         messageType: MessageType.automatic,
-        recentlyClicked: -11
+        recentlyClicked: -11,
       );
+      snackBar("Won is ${clientSendDto.isWon ? "" : "not"} send");
       sendMessageToServer(clientSendDto);
     }
   }
@@ -233,7 +245,7 @@ class Client {
       gotPattern: gameData.myPattern.isNotEmpty,
       noOfPatternMatched: 0,
       messageType: MessageType.clicked,
-      recentlyClicked: -11
+      recentlyClicked: -11,
     );
     sendMessageToServer(clientSendDto);
   }
@@ -243,16 +255,6 @@ class Client {
     String msg = jsonEncode(msgJson);
     try {
       if (tcpSocket == null) {
-        if (gameData.currentPage == Navdata.gamingPage) {
-          gameData.currentPage = Navdata.rolePage;
-          gameData.showReconnectButton = true;
-        }
-        gameData.connectionStatus.setStatus(
-          Status.disconnected,
-          message: "Connection loss!",
-        );
-        gameData.notifyUI();
-
         _handleTheDisconnectionWithSerrver();
         return;
       }
@@ -271,24 +273,29 @@ class Client {
     }
   }
 
-  void _handleTheDisconnectionWithSerrver() {
-    gameData.currentPage = Navdata.rolePage;
-    gameData.notifyUI();
-    dispose();
-  }
-
   void sendMessageToServer(ClientSendDto clientSendDto) {
     _send(clientSendDto);
   }
 
   void dispose() {
-    gameData.clear();
-    tcpSocket?.close();
+    gameData = Gamedata.instance;
     serverIPAddress = "";
-    udpSocket.close();
-    clientSendDto.clear();
-    tcpSub?.cancel();
-    serverSendDto.clear();
+    try {
+      tcpSocket?.close();
+    } catch (_) {}
+    try {
+      udpSocket.close();
+    } catch (_) {}
+    try {
+      clientSendDto.clear();
+    } catch (_) {}
+    try {
+      tcpSub?.cancel();
+    } catch (_) {}
+    try {
+      serverSendDto.clear();
+    } catch (_) {}
+    gameData.clear();
     gameData.notifyUI();
   }
 

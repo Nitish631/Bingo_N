@@ -23,15 +23,15 @@ class GameLobby extends StatefulWidget {
 class _GameLobbyState extends State<GameLobby> {
   late Gamedata gameData;
   bool isServer = false;
+  bool ready = false;
   @override
   void initState() {
     isServer = widget.communication is Server;
     gameData = widget.gameData;
-    gameData.currentPage = Navdata.lobby;
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      widget.communication.mofidyContext(context);
+      widget.communication.modifyContext(context);
     });
   }
 
@@ -59,10 +59,10 @@ class _GameLobbyState extends State<GameLobby> {
                 );
               });
             }
-            if (gameData.currentPage == Navdata.lobby) {
-              gameData.clear();
+            if (gameData.currentPage == Navdata.rolePage) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
+                widget.communication.dispose();
                 Navigator.pop(context);
               });
             }
@@ -239,11 +239,14 @@ class _GameLobbyState extends State<GameLobby> {
                                       return;
                                     }
 
-                                    (widget.communication as Server).sendNavigateToGamingPage();
+                                    (widget.communication as Server)
+                                        .sendNavigateToGamingPage();
                                   } else {
-                                    bool ready = gameData.isReady();
+                                    ready=!gameData.isReady;
+                                    gameData.isReady = ready; 
+                                    gameData.notifyUI();
                                     (widget.communication as Client)
-                                        .notifyReadyToAll(!ready);
+                                        .notifyReadyToAll(ready);
                                   }
                                 },
                                 child: Container(
@@ -256,7 +259,7 @@ class _GameLobbyState extends State<GameLobby> {
                                           ? "Reconnect"
                                           : isServer
                                           ? "Start"
-                                          : gameData.isReady()
+                                          : gameData.isReady
                                           ? "Not Ready"
                                           : "Ready",
                                       style: GoogleFonts.poppins(

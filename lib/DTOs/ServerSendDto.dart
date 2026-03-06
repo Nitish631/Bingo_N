@@ -11,7 +11,7 @@ class ServerSendDto {
   int? turnId;
   PatternWithId clientIdWithPattern = PatternWithId(
     id: -1,
-    pattern: List.empty(),
+    pattern: [],
   ); // client-specific pattern
   int recentlyClicked = -11;
   MessageType messageType = MessageType.automatic;

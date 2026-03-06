@@ -1,16 +1,7 @@
-import 'package:bingo_n/GameData/GameData.dart';
-import 'package:bingo_n/database/userInfo.dart';
 import 'package:bingo_n/screen/animation.dart';
 import 'package:flutter/material.dart';
 void main(List<String> args) async{
-  // assignName();
   runApp(const Game());
-}
-Future<void> assignName()async{
-    UserDatabase userDatabase=UserDatabase.instance;
-  userDatabase.database;
-Gamedata gameData=Gamedata.instance;
-  gameData.name=await userDatabase.getUserName();
 }
 class Game extends StatefulWidget {
   const Game({super.key});
